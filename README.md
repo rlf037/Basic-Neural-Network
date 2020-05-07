@@ -1,2 +1,7 @@
-# Basic-Neural-Network
-A python OO (Object-orientated) implementation of a simple FF (Feed-forward) / MLP (Multi-layer Perceptron) NN (Neural Network).
+# Basic Neural Network
+
+A simple Neural Network written in Python.
+
+NeuralNetwork.py contains the class for the Neural Network.
+
+##Usage
