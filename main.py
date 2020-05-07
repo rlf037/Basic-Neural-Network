@@ -24,18 +24,19 @@ Y = np.concatenate((data['y_train'], data['y_test']), axis=0)
 # X = np.array(X)
 # Y = np.array(Y)
 
-model = NeuralNetwork()
+nn = NeuralNetwork()
 
-model.input(data=X, labels=Y, flatten=True)
-model.transform(Y=True, transform='categorical') #labels transform
-model.transform(X=True, transform='normalize') #data transform
-model.split(test_split=1/7, shuffle=True, random_state=0) #split data into train/test samples before training
-model.add(n_neurons=500, activation='relu')
-model.add(n_neurons=500, activation='relu')
-model.output(activation='softmax')
+nn.input(data=X, labels=Y)
+nn.transform(Y=True, transform='categorical') #labels transform
+nn.transform(X=True, transform='normalize') #data transform
+nn.split() #split data into train/test samples before training
+nn.add()
+nn.add()
+nn.add()
+nn.output()
 
-model.compile(valid_split=0.2, optimizer='adam', batch_size=128, epochs=10)
-model.summary()
-model.train()
-model.predict()
-model.evaluate() 
+nn.compile()
+nn.summary()
+nn.train()
+nn.predict()
+nn.evaluate() 

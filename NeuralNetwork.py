@@ -31,10 +31,15 @@ class NeuralNetwork:
 
 		if not isinstance(labels, np.ndarray):
 			raise TypeError(f'{type(labels)} must be a numpy array')
-
+		
 		if flatten == True:
 			data = data.reshape(data.shape[0], -1)
 			self.flattened = True
+		else:
+			if len(data.shape) > 2:
+				data = data.reshape(data.shape[0], -1)
+			self.flattened = True
+			
 
 		if len(data.shape) != 2:
 			raise ValueError(f'Bad training data input shape {data.shape}. Try flattening the data with flatten=True')
@@ -83,7 +88,7 @@ class NeuralNetwork:
 		if not transformed:
 			raise Warning(f'No transform completed as {transform} is incompatible with this data.')
 
-	def split(self, test_split=0.2, shuffle=True, random_state=0):
+	def split(self, test_split=1/7, shuffle=True, random_state=0):
 		self.inputExistCheck()
 		np.random.seed(random_state)
 
@@ -95,7 +100,7 @@ class NeuralNetwork:
 		except:
 			raise ValueError(f'{test_split} is not a valid train/test split. Default is 0.2.')
 
-	def add(self, n_neurons=None, activation=None):
+	def add(self, n_neurons=128, activation='relu'):
 
 			self.splitCheck()
 
@@ -112,7 +117,7 @@ class NeuralNetwork:
 			self.params_count += n_neurons
 			self.previousLayerSize = n_neurons
 
-	def output(self, activation=None):
+	def output(self, activation='softmax'):
 			
 			if self.hlayers < 1:
 				raise NotImplementedError("No hidden layer detected. Use add() to add a hidden layer.")
@@ -123,7 +128,7 @@ class NeuralNetwork:
 			self.output_biases = np.zeros(self.output_size)
 			self.params_count += self.output_size
 
-	def compile(self, valid_split=None, optimizer=None, batch_size=10, epochs=3):
+	def compile(self, valid_split=0.2, optimizer='adam', batch_size=128, epochs=10):
 		self.outputExistCheck()
 
 	def summary(self):
