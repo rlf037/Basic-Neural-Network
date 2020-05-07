@@ -51,7 +51,7 @@ class NeuralNetwork:
 		self.output_size = len(np.unique(self.labels))
 		self.samples = data.shape[0]
 
-	def transform(self, X=False, Y=False, transform=None):
+	def transform(self, X=True, Y=False, transform='normalize'):
 
 		self.inputExistCheck()
 		if self.hlayers != 0:
@@ -100,7 +100,7 @@ class NeuralNetwork:
 		except:
 			raise ValueError(f'{test_split} is not a valid train/test split. Default is 0.2.')
 
-	def add(self, n_neurons=128, activation='relu'):
+	def addLayer(self, n_neurons=128, activation='relu'):
 
 			self.splitCheck()
 
@@ -147,7 +147,7 @@ class NeuralNetwork:
 			print('\t   |   ')
 		print(f'Split [{self.data.shape[0]}, {self.input_size}]')
 		print('\t   |   ')
-		print('===Training===')
+		print('\tTraining')
 		print('\t   |   ')
 		for n in self.weights:
 			print(f'Hidden [{self.data.shape[0]}, {n.shape[1]}]\n\t   |   ')
