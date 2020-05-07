@@ -17,9 +17,9 @@ nn.input(data=X, labels=Y)
 nn.transform(Y=True, transform='categorical') #labels transform
 nn.transform(X=True, transform='normalize') #data transform
 nn.split() #split data into train/test samples before training
-nn.add()
-nn.add()
-nn.add()
+nn.addLayer()
+nn.addLayer()
+nn.addLayer()
 nn.output()
 
 nn.compile()
