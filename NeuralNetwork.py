@@ -1,129 +1,162 @@
 import numpy as np
-np.random.seed(0)
 
 class NeuralNetwork:
 
 	def __init__(self):
-		self.inputL = 0
-		self.outputL = 0
+		self.inputExists = False
+		self.outputExists = False
 		self.hlayers = 0
 		self.input_size = 0
 		self.weights = []
 		self.biases = []
-		self.params = 0
+		self.params_count = 0
 		self.samples = 0
-		self.features = 0
-		self.transforms = 0
-		self.layers_added = []
+		self.transforms_list = []
+		self.test_size = 0
+		self.has_split = False
+		self.flattened = False
+		self.x_transform = False
+		self.y_transform = False 
+	
+	def input(self, data=None, labels=None, flatten=False):
 
-	def add(self, layer=None, data=None, labels=None, n_neurons=None, transform=None, value=None):
+		if data is None:
+			raise ValueError("No training data passed. Use data=X to input training data")
 
-		if layer not in ('input', 'hidden', 'output', 'transform'): 
-			raise ValueError(f"'{layer}' is not a valid layer. Try 'input', 'hidden', 'output' or 'transform'.")
+		if labels is None:
+			raise ValueError("No label data passed. Use labels=Y to input label data")
 
-		if layer == 'input':
-			if isinstance(data, np.ndarray) == False:
-				raise TypeError(f'{type(data)} must be a numpy array.')
+		if not isinstance(data, np.ndarray):
+			raise TypeError(f'{type(data)} must be a numpy array')
 
-			if data is None:
-				raise ValueError("No training data passed. Use data=X to input training data.")
+		if not isinstance(labels, np.ndarray):
+			raise TypeError(f'{type(labels)} must be a numpy array')
 
-			if labels is None:
-				raise ValueError("No label data passed. Use labels=Y to input label data.")
+		if flatten == True:
+			data = data.reshape(data.shape[0], -1)
+			self.flattened = True
 
-			if len(data.shape) != 2:
-				raise ValueError(f'bad input shape {data.shape}')
+		if len(data.shape) != 2:
+			raise ValueError(f'Bad training data input shape {data.shape}. Try flattening the data with flatten=True')
 
-			self.inputL += 1
-			self.data = data
-			self.labels = labels
-			self.input_size = data.shape[1]
-			self.samples = self.data.shape[0]
-			self.features = self.data.shape[1]
-			self.classes = len(np.unique(self.labels))
-			self.output_size = self.classes
-			self.layers_added.append('input')
+		self.inputExists = True
+		self.data = data
+		self.labels = labels
+		self.input_size = data.shape[1]
+		self.output_size = len(np.unique(self.labels))
+		self.samples = data.shape[0]
 
-		if layer == 'hidden':
-			if self.inputL != 1:
-				raise NotImplementedError("The first layer must be the input layer. Use add(layer='input') to add the input layer.")
+	def transform(self, X=False, Y=False, transform=None):
+
+		self.inputExistCheck()
+		if self.hlayers != 0:
+			raise RuntimeError("All transforms must be done before you add any hidden layers.")
+		if transform not in ('normalize', 'standardize', 'categorical'):
+			raise ValueError(f"{transform} is not a valid transform. Try 'normalize', 'standardize' or 'categorical'.")
+
+		transformed = False
+
+		if X and transform == 'normalize':
+			xmax = np.amax(self.data)
+			xmin = np.amin(self.data)
+			normalize = lambda x: (x-xmin) / (xmax - xmin)
+			self.data = normalize(self.data)
+			self.transforms_list.append(('Normalize', X, Y))
+			self.x_transform = True
+			transformed = True
+
+		if X and transform == 'standardize':
+			xmean = np.mean(self.data)
+			xstd = np.std(self.data)
+			standardize = lambda x: (x-xmean) / xstd
+			self.data = standardize(self.data)
+			self.transforms_list.append(('Standardize', X, Y))
+			self.x_transform = True
+			transformed = True
+
+		if Y and transform == 'categorical':
+			self.labels = np.eye(self.output_size)[self.labels]
+			self.transforms_list.append(('Categorical', X, Y))
+			self.y_transform = True
+			transformed = True
+
+		if not transformed:
+			raise Warning(f'No transform completed as {transform} is incompatible with this data.')
+
+	def split(self, test_split=0.2, shuffle=True, random_state=0):
+		self.inputExistCheck()
+		np.random.seed(random_state)
+
+		try:
+			self.test_size = int(self.samples*test_split)
+			self.data, self.data_test = self.data[:-self.test_size], self.data[-self.test_size:]
+			self.labels, self.labels_test = self.labels[:-self.test_size], self.labels[-self.test_size:]
+			self.has_split = True
+		except:
+			raise ValueError(f'{test_split} is not a valid train/test split. Default is 0.2.')
+
+	def add(self, n_neurons=None, activation=None):
+
+			self.splitCheck()
+
 			self.hlayers += 1
 
 			if self.hlayers == 1:
 				self.n_input_size = self.input_size
 			else:
 				self.n_input_size = self.previousLayerSize
-			self.params += self.n_input_size * n_neurons ##PARAMS
+
+			self.params_count += self.n_input_size * n_neurons
 			self.weights.append(0.10 * np.random.randn(self.n_input_size, n_neurons))
 			self.biases.append(np.zeros(n_neurons))
-			self.params += n_neurons ##PARAMS
+			self.params_count += n_neurons
 			self.previousLayerSize = n_neurons
-			self.layers_added.append('hidden')
 
-		if layer == 'output':
-			if self.inputL != 1:
-				raise NotImplementedError("The first layer must be the input layer. Use add(layer='input') to add the input layer.")
-			self.outputL += 1
-			self.params += self.previousLayerSize * self.output_size ##PARAMS
+	def output(self, activation=None):
+			
+			if self.hlayers < 1:
+				raise NotImplementedError("No hidden layer detected. Use add() to add a hidden layer.")
+
+			self.outputExists = True
+			self.params_count += self.previousLayerSize * self.output_size
 			self.output_weights = 0.10 * np.random.randn(self.previousLayerSize, self.output_size)
 			self.output_biases = np.zeros(self.output_size)
-			self.params += self.output_size #PARAMS
-			self.layers_added.append('output')
-		if layer == 'transform':
-			if self.inputL != 1:
-				raise NotImplementedError("The first layer must be the input layer. Use add(layer='input') to add the input layer.")
-			if self.hlayers != 0:
-				raise RuntimeError("All transform layers must be added before any hidden layers.")
-			if transform not in ('normalize', 'standardize', 'categorical'):
-				raise ValueError(f"{transform} is not a valid transform. Try 'normalize', 'standardize' or 'categorical'.")
-			elif transform == 'normalize':
-				xmax = np.amax(self.data)
-				xmin = np.amin(self.data)
-				normalize = lambda x: (x-xmin) / (xmax - xmin)
-				self.data = normalize(self.data)
-				self.layers_added.append('transform | normalize')
-			elif transform == 'standardize':
-				xmean = np.mean(self.data)
-				xstd = np.std(self.data)
-				standardize = lambda x: (x-xmean) / xstd
-				self.data = standardize(self.data)
-				self.layers_added.append('transform | standardize')
-			elif transform == 'categorical':
-				self.labels = np.eye(self.classes)[self.labels]
-				self.layers_added.append('transform | categorical')
-				
-			transforms += 1
+			self.params_count += self.output_size
 
+	def compile(self, valid_split=None, optimizer=None, batch_size=10, epochs=3):
+		self.outputExistCheck()
 
 	def summary(self):
-		print('Neural Network implemented with the following structure:\n')
-		print(f'Input: {self.data.shape[0]} samples each with {self.data.shape[1]} features.')
-		for ilayer, n in enumerate(self.weights):
-			print(f'[{ilayer+1}] Hidden: {n.shape[1]} neurons.')
-		print(f'Output: {self.output_size} classes.')
-
+		print('Function/Layer [Shape]')
+		print('-----------------------')
+		if self.flattened:
+			print(f'Input [{self.samples}, {int(self.input_size**0.5)}, {int(self.input_size**0.5)}]')
+			print('\t   |   ')
+			print(f'Flatten [{self.samples}, {self.input_size}]')
+			print('\t   |   ')
+		else:
+			print(f'Input [{self.samples}, {self.input_size}]')
+			print('\t   |   ')
+		if self.x_transform:
+			print(f'Normalize [{self.samples}, {self.input_size}]')
+			print('\t   |   ')
+		print(f'Split [{self.data.shape[0]}, {self.input_size}]')
+		print('\t   |   ')
+		print('===Training===')
+		print('\t   |   ')
+		for n in self.weights:
+			print(f'Hidden [{self.data.shape[0]}, {n.shape[1]}]\n\t   |   ')
+		print(f'Output [{self.data.shape[0]}, {self.output_size}]')
 		print('--------------------------')
-		print(f'Total parameters: {self.params:,}')
+		print(f'Total parameters: {self.params_count:,}')
 		print('--------------------------\n')
-		print(f'Layer structure: {tuple(self.layers_added)}\n')
+		print(f'Predict [{self.data_test.shape[0]}, {self.input_size}]')
+		print('\t   |   ')
+		print(f'Arg Max [{self.data_test.shape[0]}, {self.output_size}]')
+		print('\t   |   ')
+		print(f'Predictions [{self.data_test.shape[0]}, 1]\n')
 
-	def compile(self):
-		if self.layers_added[0] != 'input':
-			raise NotImplementedError("The first layer must be the input layer. Use add(layer='input') to add the input layer.")
-		if self.layers_added[-1] != 'output':
-			raise NotImplementedError("The last layer must the output layer. Use add(layer='output') to add the output layer.")
-		if self.hlayers < 1:
-			raise NotImplementedError("No hidden layers detected. Use add(layer='hidden') to add a hidden layer.")
-		if self.inputL == 0:
-			raise NotImplementedError("No input layer detected. Use add(layer='input') to add an input layer.")
-		if self.outputL == 0:
-			raise NotImplementedError("No output layer detected. Use add(layer='output') to add an output layer.")
-		if self.inputL > 1:
-			raise RuntimeError("More than 1 input layer detected.")
-		if self.outputL > 1:
-			raise RuntimeError("More than 1 output layer detected.")
-
-	def fit(self):
+	def train(self):
 		# 1 hidden layer only
 		if self.hlayers == 1: 					
 			self.last_output = np.dot(self.data, self.weights[0]) + self.biases[0]
@@ -139,9 +172,22 @@ class NeuralNetwork:
 		self.output = np.dot(self.last_output, self.output_weights) + self.output_biases
 
 	def predict(self):
-		print('Predictions:')
-		print('------------')
+		print(f'Predicting on {self.test_size:,} samples...')
+		print('-------------------------------')
 		print(self.output)
 
 	def evaluate(self):
 		pass
+
+	def splitCheck(self):
+		if not self.has_split:
+			raise NotImplementedError(f'You have not split the data into training/test yet. Use split() before implementing hidden layers.')
+
+	def inputExistCheck(self):
+		if not self.inputExists:
+			raise NotImplementedError("Model has no input yet. Use input(X, Y) to add input.")
+
+	def outputExistCheck(self):
+		if not self.outputExists:
+			raise NotImplementedError("Model has no output yet. Use output() to add output.")
+
