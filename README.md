@@ -1,8 +1,8 @@
 # Basic Neural Network
 
-### v1.11
+### v1.14
 
-A simple Neural Network written in Python.
+A simple Neural Network written in Python without the use of external libraries (except NumPy).
 
 NeuralNetwork.py contains the class for the Neural Network. It is a much simplier implmentation in that data preprocessing/transformation and training split can all be done in the model definition.
 
