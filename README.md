@@ -11,6 +11,8 @@ All that's required is to pass X and Y to the model input and the rest of the pa
 ## Usage
 
 ```python
+from neuralnetwork import NeuralNetwork
+
 nn = NeuralNetwork(verbose=True)
 nn.input(data=X, target=Y, flatten=True, problem='classification')
 nn.transform('normalize')
