@@ -34,6 +34,23 @@ class NN:
         if act == 'softmax':
             return lambda x: np.exp(x) / np.sum(np.exp(x), axis=0)
 
+    @staticmethod
+    def lossFunc(loss):
+        if loss == 'mae': #L1
+            return lambda y1, y2: np.sum(np.absolute(y1 - y2))
+        if loss == 'mse': #L2
+            return lambda y1, y2: np.sum((y1 - y2)**2) / y2.size
+        if loss == 'scce':
+            return scce(y1, y2)
+        if loss == 'cce':
+            return lambda y1, y2: np.max(0, 1 - y2 * y1)
+
+    @staticmethod
+    def scce(y1, y2):
+        if y1 == 1:
+            return lambda y1, y2: -log(y2)
+        else:
+            return lambda y1, y2: -log(1 - y2)
 
     def encode(self, target):
         self.output_size = len(np.unique(target))
@@ -197,7 +214,7 @@ class NN:
 
         if neurons < 1 or neurons > 1024:
             raise ValueError(
-                "Number of neurons must be between 1 and 1024 not"
+                f"Number of neurons must be between 1 and 1024 not {neurons}"
             )
 
         if activation not in self.acts:
@@ -234,14 +251,14 @@ class NN:
 
     def output(self, activation="softmax"):
 
-        if activation not in self.acts:
-            raise ValueError(
-                f"{activation} is not a valid activation function. Options: {self.acts}"
-            )
-
         if self.hlayers < 1:
             raise NotImplementedError(
                 "No hidden layers detected. Try addLayer()"
+            )
+
+        if activation not in self.acts:
+            raise ValueError(
+                f"{activation} is not a valid activation function. Options: {self.acts}"
             )
 
         self.outputExists = True
