@@ -1,6 +1,5 @@
 import numpy as np
 from neuralnetwork import NN
-import matplotlib.pyplot as plt
 
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('mnist.npz') as data:

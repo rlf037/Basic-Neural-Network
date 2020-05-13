@@ -179,6 +179,7 @@ class NN:
                 f"Test:\t\t{int(self.X_test.shape[0]):,} ({test_split:.2%})"
             )
             print(f"Shuffled:\t{shuffle}")
+            print("----------------------")
 
     def addLayer(self, neurons=128, activation="relu", dropout=False):
         self.acts = ["relu", "tanh", "sigmoid", "softmax"]
@@ -205,7 +206,7 @@ class NN:
 
         if self.hlayers == 1:
             self.n_input_size = self.input_size
-            print(f"\n\tInput [{self.X_train.shape[1]}]")
+            print(f"\tInput [{self.X_train.shape[1]}]")
         else:
             self.n_input_size = self.previous_layer_size
 
@@ -244,7 +245,8 @@ class NN:
         self.output_act = activation
 
         if self.verbose:
-            print(f"\t\t|\t\t\nOutput [{self.output_size}] ({activation})\n")
+            print(f"\t\t|\t\t\nOutput [{self.output_size}] ({activation})")
+            print("----------------------")
             print(f"Parameters:\t{self.params_count:,}\n")
 
     def compile(
@@ -288,7 +290,7 @@ class NN:
 
         if self.verbose:
             if self.problem == 'classification':
-                print(f"{self.Y_test.shape} -> {self.predictions.shape} -> {self.predictions.shape} | {self.output_act.capitalize()} -> ArgMax -> Decode)")
+                print(f"{self.Y_test.shape} -> {self.predictions.shape} -> {self.predictions.shape} | {self.output_act.capitalize()} -> ArgMax -> Decode")
 
         print(f"\nPredicting on {self.test_size:,} samples...")
         print("-------------------------------")
