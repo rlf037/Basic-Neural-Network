@@ -1,6 +1,6 @@
 # Basic Neural Network
 
-### v1.17
+### v1.18
 
 A simple Neural Network written in Python without the use of external libraries (except NumPy).
 
@@ -8,21 +8,23 @@ A simple Neural Network written in Python without the use of external libraries 
 
 All that's required is to pass X and Y to the model input and the rest of the parameters can be derived automatically based on the passed data. Automatic parameters are input size, flattening, problem (classification or regression), transformations, train/test split, layer size, layer activations, dropout(s), output activation, output size, validation split, optimizers, scorers, early stoppages, batch sizes, epochs and retransformation. One-hot encoding is automatically applied for classification and translated back on predicting.
 
+Warnings are also in-built if the user selects paramaters that are not optimised/recommended depending on the dataset type.
+
 ## Usage
 
 ```python
-from neuralnetwork import NeuralNetwork
+from neuralnetwork import NN
 
-nn = NeuralNetwork(verbose=True)
-nn.input(data=X, target=Y, flatten=True, problem='classification')
-nn.transform('normalize')
+nn = NN(verbose=True)
+nn.input(data=X, target=Y)
+nn.transform("normalize")
 nn.split(test_split=1/7, shuffle=True)
-nn.addLayer(neurons=128, activation='relu', dropout=False)
-nn.addLayer(neurons=64, activation='relu', dropout=True)
-nn.addLayer(neurons=16, activation='relu', dropout=False)
-nn.output(activation='softmax')
-nn.compile(valid_split=0.2, optimizer='adam', scorer='accuracy', early_stoppage=True)
+nn.addLayer(neurons=10, activation="relu", dropout=True)
+nn.addLayer(neurons=15, activation="sigmoid", dropout=False)
+nn.addLayer(neurons=5, activation="tanh", dropout=False)
+nn.output(activation="softmax")
+nn.compile(valid_split=1/10, loss='cce', optimizer="adam", scorer="accuracy", learn_rate=0.001)
 nn.train(batch_size=32, epochs=10)
-nn.predict('argmax')
-nn.evaluate() 
+nn.predict()
+nn.evaluate()
 ```
