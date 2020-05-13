@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class NeuralNetwork:
+class NN:
     def __init__(self, verbose=True):
 
         if not isinstance(verbose, bool):
@@ -22,6 +22,27 @@ class NeuralNetwork:
 
         if self.verbose:
             print("* Neural Network Initialised *\n")
+
+    def encode(self, target):
+        self.output_size = len(np.unique(target))
+        count = 0
+        output = []
+        output_dict = {}
+        total = set()
+        code = {}
+
+        for i in target:
+            if i in output_dict:
+                output.append(output_dict[i])
+            else:
+                output_dict[i] = count
+                output.append(output_dict[i])
+                count += 1
+                code[len(total)] = i
+                total.add(i)
+
+        self.code = code
+        self.Y = np.eye(self.output_size)[output]
 
     def input(self, data=None, target=None, flatten=False, problem=None):
         if data is None:
@@ -58,8 +79,7 @@ class NeuralNetwork:
 
         if problem == "classification":
             self.problem = "classification"
-            self.output_size = len(np.unique(target))
-            self.Y = np.eye(self.output_size)[target]
+            self.encode(target)
         else:
             self.problem = "regression"
             self.output_size = 1
@@ -80,6 +100,7 @@ class NeuralNetwork:
             print(f"Features:\t{self.input_size:,}")
             if self.problem == "classification":
                 print(f"Classes:\t{self.output_size}")
+                print(f"Encoding:\tOne-Hot")
 
     def transform(self, transform):
         trans = ["normalize", "standardize"]
@@ -138,7 +159,10 @@ class NeuralNetwork:
 
         if self.verbose:
             print(
-                f"Split:\t\t{int(self.X_train.shape[0]):,} ({1.0-test_split:.2%}) Train - {int(self.X_test.shape[0]):,} ({test_split:.2%}) Test"
+                f"Train:\t\t{int(self.X_train.shape[0]):,} ({1.0-test_split:.2%})"
+            )
+            print(
+                f"Test:\t\t{int(self.X_test.shape[0]):,} ({test_split:.2%})"
             )
             print(f"Shuffled:\t{shuffle}")
 
@@ -147,7 +171,9 @@ class NeuralNetwork:
         self.splitCheck()
 
         if neurons < 1 or neurons > 1024:
-            raise ValueError(f"Number of neurons must be between 1 and 1024 not")
+            raise ValueError(
+                "Number of neurons must be between 1 and 1024 not"
+            )
 
         if activation not in self.acts:
             raise ValueError(
@@ -155,7 +181,9 @@ class NeuralNetwork:
             )
 
         if not isinstance(dropout, bool):
-            raise TypeError("dropout must be True or False only")
+            raise TypeError(
+                "dropout must be True or False only"
+            )
 
         self.hlayers += 1
 
@@ -185,7 +213,9 @@ class NeuralNetwork:
             )
 
         if self.hlayers < 1:
-            raise NotImplementedError("No hidden layers detected. Try addLayer()")
+            raise NotImplementedError(
+                "No hidden layers detected. Try addLayer()"
+            )
 
         self.outputExists = True
         self.params_count += self.previous_layer_size * self.output_size
@@ -197,7 +227,7 @@ class NeuralNetwork:
 
         if self.verbose:
             print(f"\t\t|\t\t\nOutput [{self.output_size}] ({activation})\n")
-            print(f"Parameters:\t{self.params_count:,}")
+            print(f"Parameters:\t{self.params_count:,}\n")
 
     def compile(
         self, valid_split=0.2, optimizer="adam", scorer="accuracy", early_stoppage=True
@@ -224,13 +254,17 @@ class NeuralNetwork:
         self.output = np.dot(self.last_output, self.output_weights) + self.output_biases
         print(self.output)
 
-    def predict(self, transform):
+    def predict(self):
 
         print(f"\nPredicting on {self.test_size:,} samples...")
         print("-------------------------------")
 
+        #convert from one-hot encoding back to category integers and then decode back to original class
+        # with self.code dictionary that stored each class as a value to the integer key
         if self.problem == "classification":
-            self.output = np.argmax(self.output, axis=1)
+            self.output = np.argmax(self.Y_train, axis=1)
+            self.output = [self.code[x] for x in self.output]
+            self.output = np.array(self.output)
 
     def evaluate(self):
         pass
@@ -238,15 +272,17 @@ class NeuralNetwork:
     def splitCheck(self):
         if not self.splitted:
             raise NotImplementedError(
-                f"You have not split the data into training and test sets yet. Use split()"
+                "You have not split the data into training and test sets yet. Use split()"
             )
 
     def inputExistCheck(self):
         if not self.inputExists:
-            raise NotImplementedError("No input detected. Use input()")
+            raise NotImplementedError(
+                "No input detected. Use input()"
+            )
 
     def outputExistCheck(self):
         if not self.outputExists:
             raise NotImplementedError(
-                "Model has no output yet. Use output() to add output."
+                "Model has no output yet. Use output()"
             )
