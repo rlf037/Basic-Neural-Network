@@ -1,6 +1,6 @@
 # Basic Neural Network
 
-### v1.16
+### v1.17
 
 A simple Neural Network written in Python without the use of external libraries (except NumPy).
 

@@ -23,6 +23,18 @@ class NN:
         if self.verbose:
             print("* Neural Network Initialised *\n")
 
+    @staticmethod
+    def actFunc(act):
+        if act == 'sigmoid':
+            return lambda x: 1.0/(1.0 + np.exp(-x))
+        if act == 'tanh':
+            return lambda x: np.tanh(x)
+        if act == 'relu':
+            return lambda x: np.maximum(0,x)
+        if act == 'softmax':
+            return lambda x: np.exp(x) / np.sum(np.exp(x), axis=0)
+
+
     def encode(self, target):
         self.output_size = len(np.unique(target))
         count = 0
@@ -42,6 +54,7 @@ class NN:
                 total.add(i)
 
         self.code = code
+        self.target = target
         self.Y = np.eye(self.output_size)[output]
 
     def input(self, data=None, target=None, flatten=False, problem=None):
@@ -132,7 +145,7 @@ class NN:
         if self.verbose:
             print(f"Transform:\t{self.transforms[0].capitalize()[:-1]}ation")
 
-    def split(self, test_split=1 / 7, shuffle=True, seed=None):
+    def split(self, test_split=1/7, shuffle=True, seed=None):
         self.inputExistCheck()
 
         if not isinstance(shuffle, bool):
@@ -140,7 +153,7 @@ class NN:
 
         if shuffle:
             r = np.random.RandomState(seed=seed).permutation(self.samples)
-            self.X, self.Y = self.X[r], self.Y[r]
+            self.X, self.Y, self.target = self.X[r], self.Y[r], self.target[r]
 
         try:
             self.test_size = int(self.samples * test_split)
@@ -152,6 +165,7 @@ class NN:
                 self.Y[: -self.test_size],
                 self.Y[-self.test_size :],
             )
+            self.target = self.target[: -self.test_size]
             self.splitted = True
             del self.X, self.Y
         except:
@@ -179,6 +193,8 @@ class NN:
             raise ValueError(
                 f"{activation} is not a valid activation function. Options: {self.acts}"
             )
+        else:
+            self.activations.append(activation)
 
         if not isinstance(dropout, bool):
             raise TypeError(
@@ -194,7 +210,7 @@ class NN:
             self.n_input_size = self.previous_layer_size
 
         self.params_count += self.n_input_size * neurons
-        self.weights.append(0.10 * np.random.randn(self.n_input_size, neurons))
+        self.weights.append(np.random.standard_normal() * np.random.randn(self.n_input_size, neurons))
         self.biases.append(np.zeros(neurons))
         self.params_count += neurons
         self.previous_layer_size = neurons
@@ -219,11 +235,13 @@ class NN:
 
         self.outputExists = True
         self.params_count += self.previous_layer_size * self.output_size
-        self.output_weights = 0.10 * np.random.randn(
+        self.output_weights = np.random.standard_normal() * np.random.randn(
             self.previous_layer_size, self.output_size
         )
         self.output_biases = np.zeros(self.output_size)
         self.params_count += self.output_size
+
+        self.output_act = activation
 
         if self.verbose:
             print(f"\t\t|\t\t\nOutput [{self.output_size}] ({activation})\n")
@@ -239,6 +257,8 @@ class NN:
         # 1 hidden layer only
         if self.hlayers == 1:
             self.last_output = np.dot(self.X_train, self.weights[0]) + self.biases[0]
+            act_func = self.actFunc(self.activations[0])
+            self.last_output = act_func(self.last_output)
         # multiple hidden layers
         else:
             for layer_num in range(len(self.weights)):
@@ -250,24 +270,32 @@ class NN:
                     np.dot(self.X_train, self.weights[layer_num])
                     + self.biases[layer_num]
                 )
+                act_func = self.actFunc(self.activations[layer_num])
+                self.last_output = act_func(self.last_output)
 
         self.output = np.dot(self.last_output, self.output_weights) + self.output_biases
-        print(self.output)
+        act_func = self.actFunc(self.output_act)
+        self.output = act_func(self.output)
 
     def predict(self):
-
-        print(f"\nPredicting on {self.test_size:,} samples...")
-        print("-------------------------------")
 
         #convert from one-hot encoding back to category integers and then decode back to original class
         # with self.code dictionary that stored each class as a value to the integer key
         if self.problem == "classification":
-            self.output = np.argmax(self.Y_train, axis=1)
-            self.output = [self.code[x] for x in self.output]
-            self.output = np.array(self.output)
+            self.predictions = np.argmax(self.output, axis=1)
+            self.predictions = [self.code[x] for x in self.predictions]
+            self.predictions = np.array(self.predictions)
+
+        if self.verbose:
+            if self.problem == 'classification':
+                print(f"{self.Y_test.shape} -> {self.predictions.shape} -> {self.predictions.shape} | {self.output_act.capitalize()} -> ArgMax -> Decode)")
+
+        print(f"\nPredicting on {self.test_size:,} samples...")
+        print("-------------------------------")
 
     def evaluate(self):
-        pass
+        self.correct = np.sum(self.predictions == self.target)
+        print(f"Accuracy: {self.correct}/{self.target.shape[0]} ({(self.correct/self.target.shape[0]):.2%})")
 
     def splitCheck(self):
         if not self.splitted:
