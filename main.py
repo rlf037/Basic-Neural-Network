@@ -7,27 +7,27 @@ with np.load('datasets/mnist2.npz') as data:
 
 # convert labels to strings rather than integers
 # Y = np.array([str(x) for x in Y])
-
+# X = X[:1000]
+# Y = Y[:1000]
 # === NEURAL NETWORK ===
 nn = NN(verbose=True)
-nn.input(data=X, target=Y)
-nn.transform()
-nn.split()
-nn.addLayer()
-nn.addLayer()
-nn.addLayer()
-nn.output()
-nn.compile()
-nn.train()
-nn.evaluate()
+Y = nn.encode(Y)
+X = NN.normalize(X)
+X_train, X_test, Y_train, Y_test = NN.split(X, Y)
+nn.input(X_train.shape)
+nn.addLayer(neurons=10)
+nn.output(Y_train.shape, activation='softmax')
+nn.compile(batch_size=100)
+nn.train(X_train, Y_train)
+nn.evaluate(X_test, Y_test)
 
 # nn.save('mnist')
 # mnist = NN.load('mnist')
 
 # import matplotlib.pyplot as plt
 # digit = np.random.randint(0, X.shape[0])
-# prediction, acc = mnist.predict(X[digit])
-# print(f'Model: {prediction} ({acc:.2%}) | Actual: {Y[digit]}')
+# prediction, acc, code = mnist.predict(X[digit])
+# print(f'Model: {prediction} ({acc:.2%}) | Actual: {code[np.argmax(Y[digit])]}')
 # plt.imshow(X[digit], cmap='bone_r')
 # plt.show()
 
