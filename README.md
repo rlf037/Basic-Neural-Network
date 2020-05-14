@@ -1,6 +1,6 @@
 # Basic Neural Network
 
-### v0.19
+### v0.20
 
 A simple Neural Network written in Python without the use of external libraries (except NumPy).
 
@@ -10,7 +10,8 @@ All that's required is to pass X and Y to the model input and the rest of the pa
 
 Warnings are also in-built if the user selects paramaters that are not optimised/recommended depending on the dataset type.
 
-There is the aility to save and load the model from within the class built-in as shown in the advanced usage.
+There is the aility to save and load the model from within the class built-in as shown in the advanced usage. However it requires the dill module (pickle doesn't store lambda functions...).
+Use `pip install dill` to install it.
 
 Note: For classification, the labels must be strings.
 

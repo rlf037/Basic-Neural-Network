@@ -1,6 +1,6 @@
 import numpy as np
 import warnings
-import pickle
+import dill
 
 class NN:
     def __init__(self, verbose=True):
@@ -159,13 +159,13 @@ class NN:
 
         if transform == "normalize":
             xmax, xmin = np.amax(self.X), np.amin(self.X)
-            normalize = lambda x: (x - xmin) / (xmax - xmin)
-            self.X = normalize(self.X)
+            self.normalize = lambda x: (x - xmin) / (xmax - xmin)
+            self.X = self.normalize(self.X)
 
         if transform == "standardize":
             xmean, xstd = np.mean(self.X), np.std(self.X)
-            standardize = lambda x: (x - xmean) / xstd
-            self.X = standardize(self.X)
+            self.standardize = lambda x: (x - xmean) / xstd
+            self.X = self.standardize(self.X)
 
         self.transformed = True
         self.transforms.append(transform)
@@ -377,8 +377,9 @@ class NN:
 
         if self.verbose:
             print('Finished training!\n')
-
-    def predict(self):
+        
+    # Automatic predictions and evaluations based on test data
+    def evaluate(self):
         #convert from one-hot encoding back to category integers and then decode back to original class
         # with self.code dictionary that stored each class as a value to the integer key
         if self.problem == "classification":
@@ -395,7 +396,6 @@ class NN:
         print(f"Predicting on {self.test_size:,} samples...")
         print("-------------------------------")
 
-    def evaluate(self):
         self.target = self.target[: -self.valid_size]
         self.correct = np.sum(self.predictions == self.target)
         self.test_acc =  self.correct/self.target.shape[0]
@@ -404,7 +404,7 @@ class NN:
     def save(self, path):
         xpath = path + '.pkl'
         with open(xpath, 'wb') as f:
-            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+            dill.dump(self, f)
         print(f"'{path.upper()}' model saved.")
 
     @staticmethod
@@ -412,5 +412,50 @@ class NN:
         xpath = path + '.pkl'
         with open(xpath, 'rb') as f:
             print(f"'{path.upper()}' model loaded.\n")
-            return pickle.load(f)
+            return dill.load(f)
+
+    def predict(self, data):
+        self.last_output = 0
+        # Perform same flattening (if applicable) and transformations to outside data to predict with:
+        if self.flattened:
+            data = data.reshape(-1)
+
+        if self.transformed:
+            if self.transforms[0] == "normalize":
+                data = self.normalize(data)
+
+            if self.transforms[0] == "standardize":
+                data = self.standardize(data)
+
+        # 1 hidden layer only
+        if self.hlayers == 1:
+            last_output = np.dot(data, self.weights[0]) + self.biases[0]
+            act_func = self.actFunc(self.activations[0])
+            last_output = act_func(last_output)
+        # multiple hidden layers
+        else:
+            for layer_num in range(len(self.weights)):
+                # skip on first layer iteration (last_output not set yet)
+                if layer_num != 0:
+                    data = last_output
+
+                last_output = (
+                    np.dot(data, self.weights[layer_num])
+                    + self.biases[layer_num]
+                )
+                act_func = self.actFunc(self.activations[layer_num])
+                last_output = act_func(last_output)
+
+        output = np.dot(last_output, self.output_weights) + self.output_biases
+        act_func = self.actFunc(self.output_act)
+        output = act_func(output)
+
+        if self.problem == "classification":
+                prediction = np.argmax(output)
+                prediction = self.code[prediction]
+        else:
+            prediction = output
+
+        return prediction
+
 
