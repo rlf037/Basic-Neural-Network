@@ -3,7 +3,7 @@ import warnings
 import dill
 
 class NN:
-    def __init__(self, verbose=True):
+    def __init__(self, verbose=False):
 
         if not isinstance(verbose, bool):
             raise TypeError("verbose must be True or False")
@@ -22,7 +22,7 @@ class NN:
         self.outputExists = False
 
         if self.verbose:
-            print("* Neural Network Initialised *\n")
+            print("* Neural Network Initialised *")
 
     @staticmethod
     def actFunc(act):
@@ -128,7 +128,7 @@ class NN:
         self.inputExists = True
         self.X = data
         self.input_size = data.shape[1]
-        self.samples = data.shape[0]
+        self.sample_size = data.shape[0]
 
         if self.verbose:
             print(f"Problem:\t{self.problem.capitalize()}")
@@ -136,13 +136,13 @@ class NN:
                 print(
                     f"Flattened:\t({int(self.input_size**0.5)}, {int(self.input_size**0.5)}) -> {self.input_size}"
                 )
-            print(f"Samples:\t{self.samples:,}")
+            print(f"Samples:\t{self.sample_size:,}")
             print(f"Features:\t{self.input_size:,}")
             if self.problem == "classification":
                 print(f"Classes:\t{self.output_size}")
                 print(f"Encoding:\tOne-Hot")
 
-    def transform(self, transform):
+    def transform(self, transform=None):
         trans = ["normalize", "standardize"]
 
         if not self.inputExists:
@@ -152,6 +152,10 @@ class NN:
             raise RuntimeError(
                 "Transforms must be done before splitting the data to ensure the same transformations are applied to both the training set and testing set"
             )
+
+        if not transform:
+        	transform = 'normalize'
+
         if transform not in trans:
             raise ValueError(
                 f"'{transform}' is not a valid transform. Options: {trans}"
@@ -180,36 +184,40 @@ class NN:
         if not isinstance(shuffle, bool):
             raise TypeError("shuffle must be True or False only")
 
-        if shuffle:
-            r = np.random.RandomState(seed=seed).permutation(self.samples)
-            self.X, self.Y, self.target = self.X[r], self.Y[r], self.target[r]
+        if test_split>0 and test_split <1:
+        	# 'r' sets a random permutation of the whole dataset
+        	if shuffle:
+        		rp = np.random.RandomState(seed=seed).permutation(self.sample_size)
+        		self.X, self.Y, self.target = self.X[rp], self.Y[rp], self.target[rp]
 
-        try:
-            self.test_size = int(self.samples * test_split)
-            self.X_train, self.X_test = (
-                self.X[: -self.test_size],
-                self.X[-self.test_size :],
-            )
-            self.Y_train, self.Y_test = (
-                self.Y[: -self.test_size],
-                self.Y[-self.test_size :],
-            )
-            self.target = self.target[: -self.test_size]
-            self.splitted = True
-            self.train_size = self.X_train.shape[0]
-            del self.X, self.Y
-        except:
-            raise ValueError(f"{test_split} is not a valid test split. Default is 1/7")
+        	try:
+	            self.test_size = int(self.sample_size * test_split)
+	            self.X_train, self.X_test = (
+	                self.X[: -self.test_size],
+	                self.X[-self.test_size :],
+	            )
+	            self.Y_train, self.Y_test = (
+	                self.Y[: -self.test_size],
+	                self.Y[-self.test_size :],
+	            )
+	            self.target = self.target[: -self.test_size]
+	            self.splitted = True
+	            self.train_size = self.X_train.shape[0]
+	            del self.X, self.Y
+	        except:
+	            raise ValueError(f"{test_split} is not a valid test split. Default is 1/7")
+
+        else:
+        	raise ValueError(f"test_split {test_split} must be a value between 0 and 1")
 
         if self.verbose:
             print(
-                f"Train:\t\t{int(self.train_size):,} ({1.0-test_split:.2%})"
+                f"Train:\t\t{int(self.train_size):,} ({1.0-test_split:%})"
             )
             print(
-                f"Test:\t\t{int(self.X_test.shape[0]):,} ({test_split:.2%})"
+                f"Test:\t\t{int(self.X_test.shape[0]):,} ({test_split:%})"
             )
             print(f"Shuffled:\t{shuffle}")
-            print("----------------------")
 
     def addLayer(self, neurons=128, activation="relu", dropout=False):
         self.acts = ["relu", "tanh", "sigmoid", "softmax"]
@@ -237,7 +245,9 @@ class NN:
 
         if self.hlayers == 1:
             self.n_input_size = self.input_size
-            print(f"\tInput [{self.X_train.shape[1]}]")
+            if self.verbose:
+            	print("----------------------")
+            	print(f"\tInput [{self.X_train.shape[1]}]")
         else:
             self.n_input_size = self.previous_layer_size
 
@@ -283,11 +293,11 @@ class NN:
             print(f"Parameters:\t{self.params_count:,}")
 
     def compile(
-        self, valid_split=1/10, optimizer="adam", loss="mse", scorer="accuracy", learn_rate=0.001):
+        self, valid_split=1/10, optimizer="adam", loss="cce", scorer="accuracy", learn_rate=0.001):
         if not self.outputExists:
             raise NotImplementedError("Model has no output yet. Use output()")
         opts = ["adam", "sgd", "rmsprop", "adadelta"]
-        losses = ['mae', 'mse', 'cce']
+        losses = ['mae', 'mse', 'cce', 'scce', 'bce']
         scorers = ['accuracy']
 
         if optimizer not in opts:
@@ -299,32 +309,47 @@ class NN:
                 f"{loss} is not a valid loss function. Options: {losses}"
             )
         if loss != 'cce' and self.problem == 'classification':
-            warnings.warn("Categorical Cross Entropy ('cce') is recommended as the loss function when doing classification")
+            warnings.warn("Categorical Crossentropy ('cce') is recommended as the loss function when doing classification with one-hot encoding")
         if loss != 'cce' and self.problem == 'regression':
             warnings.warn("'cce' is not recommended as the loss function for regression. Try 'mse' or 'mae'")
         if scorer not in scorers:
             raise ValueError(
                 f"{scorer} is not a valid scorer. Options: {scorers}"
-            ) 
+            )
 
-        try:
-            self.valid_size = int(self.X_train.shape[0] * valid_split)
-            self.X_train, self.X_valid = (
-                self.X_train[: -self.valid_size],
-                self.X_train[-self.valid_size :],
-            )
-            self.Y_train, self.Y_valid = (
-                self.Y_train[: -self.valid_size],
-                self.Y_train[-self.valid_size :],
-            )
-        except:
-            raise ValueError(f"{valid_split} is not a valid validation split. Default is 1/10")
+        self.loss = loss
+
+        if valid_split>0 and valid_split <1:
+        	try:
+	            self.valid_size = int(self.X_train.shape[0] * valid_split)
+	            self.X_train, self.X_valid = (
+	                self.X_train[: -self.valid_size],
+	                self.X_train[-self.valid_size :],
+	            )
+	            self.Y_train, self.Y_valid = (
+	                self.Y_train[: -self.valid_size],
+	                self.Y_train[-self.valid_size :],
+	            )
+	        except:
+	            raise ValueError(f"{valid_split} is not a valid validation split. Default is 1/10")
+        else:
+        	raise ValueError(f"valid_split {valid_split} must be a value between 0 and 1")
 
         if self.verbose:
-            print(f"Validation:\t{valid_split:.2%}")
-            print(f"Loss Func:\t{loss.upper()}")
+            print(f"Validation:\t{valid_size} ({valid_split:%})")
             print(f"Optimizer:\t{optimizer.capitalize()}")
             print(f"Scorer:\t\t{scorer.capitalize()}")
+            if self.loss == 'mae':
+            	a = 'Mean Absolute Error'
+            if self.loss == 'mse':
+            	a = 'Mean Squared Error'
+            if self.loss == 'cce':
+            	a = 'Categorical Crossentropy'
+            if self.loss == 'scce':
+            	a = 'Sparse Categorical Crossentropy'
+            if self.loss == 'bce':
+            	a = 'Binary Crossentropy'
+            print(f"Loss:\t\t{a}")
 
     def train(self, batch_size=32, epochs=10):
 
@@ -391,10 +416,11 @@ class NN:
 
         if self.verbose:
             if self.problem == 'classification':
-                print(f"{self.Y_test.shape} -> {self.predictions.shape} -> {self.predictions.shape} | {self.output_act.capitalize()} -> ArgMax -> Decode")
+            	print("Testing Pipeline:")
+            	print(f"{self.Y_test.shape} -> {self.predictions.shape} -> {self.predictions.shape} | {self.output_act.capitalize()} -> ArgMax -> Decode")
 
-        print(f"Predicting on {self.test_size:,} samples...")
-        print("-------------------------------")
+        print(f"\nTesting Set Evaluation:")
+        print("-----------------------")
 
         self.target = self.target[: -self.valid_size]
         self.correct = np.sum(self.predictions == self.target)
@@ -451,11 +477,13 @@ class NN:
         output = act_func(output)
 
         if self.problem == "classification":
-                prediction = np.argmax(output)
-                prediction = self.code[prediction]
+            prediction = np.argmax(output)
+            prediction = self.code[prediction]
+            score = np.amax(output)
+            return prediction, score
         else:
-            prediction = output
+            return output
 
-        return prediction
+        
 
 
