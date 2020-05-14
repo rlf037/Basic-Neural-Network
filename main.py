@@ -2,7 +2,7 @@ import numpy as np
 from neuralnetwork import NN
 
 # === MNIST HANDWRITTEN DIGITS ===
-with np.load('mnist.npz') as data:
+with np.load('datasets/mnist.npz') as data:
 	X, Y = (
 	    np.concatenate((data['x_train'], data['x_test']), axis=0),
 	    np.concatenate((data['y_train'], data['y_test']), axis=0),

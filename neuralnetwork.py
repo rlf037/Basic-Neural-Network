@@ -401,17 +401,17 @@ class NN:
         self.test_acc =  self.correct/self.target.shape[0]
         print(f"Accuracy: {self.correct}/{self.target.shape[0]} ({self.test_acc:.2%})\n")
 
-    def save(self, path):
-        xpath = path + '.pkl'
-        with open(xpath, 'wb') as f:
+    def save(self, file):
+        path = 'models/' + file + '.pkl'
+        with open(path, 'wb') as f:
             dill.dump(self, f)
-        print(f"'{path.upper()}' model saved.")
+        print(f"'{file.upper()}' model saved.")
 
     @staticmethod
-    def load(path):
-        xpath = path + '.pkl'
-        with open(xpath, 'rb') as f:
-            print(f"'{path.upper()}' model loaded.\n")
+    def load(file):
+        path = 'models/' + file + '.pkl'
+        with open(path, 'rb') as f:
+            print(f"'{file.upper()}' model loaded.\n")
             return dill.load(f)
 
     def predict(self, data):

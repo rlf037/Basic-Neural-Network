@@ -30,7 +30,7 @@ nn.compile()
 nn.train()
 ```
 
-#### Advanced `(main.py)`
+#### Advanced `main.py`
 ```python
 import numpy as np
 from neuralnetwork import NN
