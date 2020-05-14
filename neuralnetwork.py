@@ -242,7 +242,7 @@ class NN:
             self.n_input_size = self.previous_layer_size
 
         self.params_count += self.n_input_size * neurons
-        self.weights.append(np.random.standard_normal() * np.random.randn(self.n_input_size, neurons))
+        self.weights.append(0.10 * np.random.randn(self.n_input_size, neurons))
         self.biases.append(np.zeros(neurons))
         self.params_count += neurons
         self.previous_layer_size = neurons
@@ -267,7 +267,7 @@ class NN:
 
         self.outputExists = True
         self.params_count += self.previous_layer_size * self.output_size
-        self.output_weights = np.random.standard_normal() * np.random.randn(
+        self.output_weights = 0.10 * np.random.randn(
             self.previous_layer_size, self.output_size
         )
         self.output_biases = np.zeros(self.output_size)
