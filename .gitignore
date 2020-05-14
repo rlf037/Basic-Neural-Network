@@ -1,6 +1,9 @@
-# Testing .py
+# test file
 test.py
+# notebooks
 *.ipynb
+#pickled files
+*.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,6 +1,6 @@
 # Basic Neural Network
 
-### v1.18
+### v0.19
 
 A simple Neural Network written in Python without the use of external libraries (except NumPy).
 
@@ -10,11 +10,27 @@ All that's required is to pass X and Y to the model input and the rest of the pa
 
 Warnings are also in-built if the user selects paramaters that are not optimised/recommended depending on the dataset type.
 
+There is the aility to save and load the model from within the class built-in as shown in the advanced usage.
+
+Note: For classification, the labels must be strings.
+
 ## Usage
 
+#### Basic
 ```python
 from neuralnetwork import NN
 
+nn = NN()
+nn.input(data=X, target=Y)
+nn.split()
+nn.addLayer()
+nn.output()
+nn.compile()
+nn.train()
+```
+
+#### Advanced
+```python
 nn = NN(verbose=True)
 nn.input(data=X, target=Y)
 nn.transform("normalize")
@@ -27,4 +43,7 @@ nn.compile(valid_split=1/10, loss='cce', optimizer="adam", scorer="accuracy", le
 nn.train(batch_size=32, epochs=10)
 nn.predict()
 nn.evaluate()
+
+nn.save('mnist')
+new_model = NN.load('mnist')
 ```

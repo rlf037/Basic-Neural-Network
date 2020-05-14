@@ -1,5 +1,6 @@
 import numpy as np
 import warnings
+import pickle
 
 class NN:
     def __init__(self, verbose=True):
@@ -144,7 +145,8 @@ class NN:
     def transform(self, transform):
         trans = ["normalize", "standardize"]
 
-        self.inputExistCheck()
+        if not self.inputExists:
+            raise NotImplementedError( "No input detected. Use input()")
 
         if self.splitted:
             raise RuntimeError(
@@ -172,7 +174,8 @@ class NN:
             print(f"Transform:\t{self.transforms[0].capitalize()[:-1]}ation")
 
     def split(self, test_split=1/10, shuffle=True, seed=None):
-        self.inputExistCheck()
+        if not self.inputExists:
+            raise NotImplementedError( "No input detected. Use input()")
 
         if not isinstance(shuffle, bool):
             raise TypeError("shuffle must be True or False only")
@@ -196,7 +199,7 @@ class NN:
             self.train_size = self.X_train.shape[0]
             del self.X, self.Y
         except:
-            raise ValueError(f"{test_split} is not a valid test split. Default is 1/10")
+            raise ValueError(f"{test_split} is not a valid test split. Default is 1/7")
 
         if self.verbose:
             print(
@@ -210,7 +213,8 @@ class NN:
 
     def addLayer(self, neurons=128, activation="relu", dropout=False):
         self.acts = ["relu", "tanh", "sigmoid", "softmax"]
-        self.splitCheck()
+        if not self.splitted:
+            raise NotImplementedError( "You have not split the data into training and test sets yet. Use split()")
 
         if neurons < 1 or neurons > 1024:
             raise ValueError(
@@ -280,7 +284,8 @@ class NN:
 
     def compile(
         self, valid_split=1/10, optimizer="adam", loss="mse", scorer="accuracy", learn_rate=0.001):
-        self.outputExistCheck()
+        if not self.outputExists:
+            raise NotImplementedError("Model has no output yet. Use output()")
         opts = ["adam", "sgd", "rmsprop", "adadelta"]
         losses = ['mae', 'mse', 'cce']
         scorers = ['accuracy']
@@ -393,22 +398,19 @@ class NN:
     def evaluate(self):
         self.target = self.target[: -self.valid_size]
         self.correct = np.sum(self.predictions == self.target)
-        print(f"Accuracy: {self.correct}/{self.target.shape[0]} ({(self.correct/self.target.shape[0]):.2%})")
+        self.test_acc =  self.correct/self.target.shape[0]
+        print(f"Accuracy: {self.correct}/{self.target.shape[0]} ({self.test_acc:.2%})\n")
 
-    def splitCheck(self):
-        if not self.splitted:
-            raise NotImplementedError(
-                "You have not split the data into training and test sets yet. Use split()"
-            )
+    def save(self, path):
+        xpath = path + '.pkl'
+        with open(xpath, 'wb') as f:
+            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+        print(f"'{path.upper()}' model saved.")
 
-    def inputExistCheck(self):
-        if not self.inputExists:
-            raise NotImplementedError(
-                "No input detected. Use input()"
-            )
+    @staticmethod
+    def load(path):
+        xpath = path + '.pkl'
+        with open(xpath, 'rb') as f:
+            print(f"'{path.upper()}' model loaded.\n")
+            return pickle.load(f)
 
-    def outputExistCheck(self):
-        if not self.outputExists:
-            raise NotImplementedError(
-                "Model has no output yet. Use output()"
-            )

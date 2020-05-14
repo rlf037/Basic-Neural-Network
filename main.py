@@ -1,5 +1,6 @@
 import numpy as np
 from neuralnetwork import NN
+import pickle
 
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('mnist.npz') as data:
@@ -22,3 +23,6 @@ nn.compile(valid_split=1/10, loss='cce', optimizer="adam", scorer="accuracy", le
 nn.train(batch_size=32, epochs=10)
 nn.predict()
 nn.evaluate()
+
+# nn.save('mnist')
+# new_model = NN.load('mnist')
