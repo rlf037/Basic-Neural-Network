@@ -1,33 +1,33 @@
 # Basic Neural Network
 
-### v0.30
+### v0.50
 
 A simple Neural Network written in Python without the use of external libraries (except NumPy).
 
-`neuralnetwork.py` contains the class for the Neural Network (NN). It is an easy to use implementation in that data preprocessing/transformation, train/test split and retransformations can all be done in the same object which gives a better linear picture of the network.
+`neuralnetwork.py` contains the class for the Neural Network (NNet). It is an easy to use implementation in that data transformation and encoding as well as train/test split can all be done in the same class.
 
-All that's required is to pass X and Y to the model input and the rest of the parameters can be derived automatically based on the inputted data. Automatic parameters are input size, flattening, problem (classification or regression), transformations, train/test split, layer size, layer activations, dropout(s), output activation, output size, validation split, optimizers, scorers, early stoppages, batch sizes, epochs and retransformation. One-hot encoding is automatically applied for classification and translated back on prediction.
-
-Warnings are also in-built if the user selects paramaters that are not optimised/recommended depending on the dataset type.
+For classification, categorical labels must be strings and then converted to NumPy arrays (although this can be done for you automatically if possible). One-hot encoding returns and a dictionary code along the encoded labels to decode the predicted labels back into their categorical string form (check the usage).
 
 There is the aility to save and load the model from within the class built-in as shown in the advanced usage. However it requires the dill module (pickle doesn't store lambda functions...).
 Use `pip install dill` to install it.
-
-Note: For classification, the labels must be strings.
 
 ## Usage
 
 #### Basic
 ```python
-from neuralnetwork import NN
+from neuralnetwork import NNet
 
-nn = NN()
-nn.input(data=X, target=Y)
-nn.split()
-nn.addLayer()
-nn.output()
-nn.compile()
-nn.train()
+X, Y = some_dataset
+
+model = NNet()
+Y, code = NNet.encode(Y)
+X = NNet.normalize(X)
+X_train, X_test, Y_train, Y_test = NNet.split(X, Y)
+model.input(X_train.shape)
+model.hidden()
+model.output(Y_train.shape)
+model.compile()
+model.train(X_train, Y_train)
 ```
 
 #### Advanced `main.py`
