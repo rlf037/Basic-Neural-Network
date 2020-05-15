@@ -1,5 +1,6 @@
 import numpy as np
-import warnings, dill, math
+import warnings, dill, math, itertools
+# import tensorflow as tf
 
 class NNet:
 
@@ -9,7 +10,7 @@ class NNet:
         self.verbose = verbose
         self.layers = 0
         self.params = 0
-        self.layer_activations = []
+        self.activations = []
         self.weights = []
         self.biases = []
         self.inputExists = False
@@ -20,32 +21,6 @@ class NNet:
         self.scorers = ['accuracy']
         if self.verbose:
             print("* Neural Network Initialised *\n")
-
-    @staticmethod
-    def activations(act):
-        if act == 'sigmoid':
-            return lambda x: 1.0/(1.0 + np.exp(-x))
-        if act == 'tanh':
-            return lambda x: np.tanh(x)
-        if act == 'relu':
-            return lambda x: np.maximum(0,x)
-        if act == 'leaky_relu':
-            return lambda x: np.maximum(0.1*x, x)
-        if act == 'softmax':
-            return lambda x: np.exp(x) / np.sum(np.exp(x), axis=0)
-
-    @staticmethod
-    def losses(loss):
-        if loss == 'mae': #L1
-            return lambda y1, y2: np.sum(np.absolute(y1 - y2))
-        if loss == 'mse': #L2
-            return lambda y1, y2: np.sum((y1 - y2)**2) / y2.size
-        if loss == 'scce':
-            return lambda p, q: p + q
-        if loss == 'cce':
-            return lambda p, q: -sum([p[i]*math.log2(q[i]) for i in range(len(p))])
-        if loss == 'bce':
-            return lambda p, q: p + q
 
     @staticmethod
     def encode(target):
@@ -142,7 +117,7 @@ class NNet:
         if activation not in self.activators:
             raise ValueError(f"{activation} is not a valid activation function. Options: {self.activators}")
         else:
-            self.layer_activations.append(activation)
+            self.activations.append(activation)
         if not isinstance(dropout, bool):
             raise TypeError("Dropout must be True or False")
 
@@ -162,7 +137,7 @@ class NNet:
         # parameter counter
         self.params += (input_neurons * neurons) + neurons
         # INITIALIZE WEIGHTS
-        self.weights.append(np.random.randn(input_neurons, neurons) * np.sqrt(2/input_neurons))
+        self.weights.append(np.random.randn(input_neurons, neurons) * np.sqrt(1/input_neurons))
         # INITIALIZE BIASES
         self.biases.append(np.random.randn(1, neurons))
 
@@ -181,7 +156,7 @@ class NNet:
         if activation not in self.activators:
             raise ValueError(f"{activation} is not a valid activation function. Options: {self.activators}")
         else:
-            self.output_activation = activation
+            self.activations.append(activation)
 
         # set output size to the shape[1] of the target data
         try:
@@ -193,10 +168,8 @@ class NNet:
 
         # parameter counter 
         self.params += (self.previous_output_size * self.output_size) + self.output_size
-        # INITIALIZE WEIGHTS
-        self.output_weights = np.random.randn(self.previous_output_size, self.output_size) * np.sqrt(2/self.previous_output_size)
-        # INITIALIZE BIASES
-        self.output_biases = np.random.randn(1, self.output_size)
+        self.weights.append(np.random.randn(self.previous_output_size, self.output_size) * np.sqrt(1/self.previous_output_size))
+        self.biases.append(np.random.randn(1, self.output_size))
         
         if self.verbose:
             print(f"\t\t|\t\t\nOutput [{self.output_size}] ({activation})")
@@ -216,7 +189,7 @@ class NNet:
         if loss not in self.loss_functions:
             raise ValueError(f"{loss} is not a valid loss function. Options: {self.loss_functions}")
         else:
-            self.loss = self.losses(loss)
+            self.loss = loss
         if scorer not in self.scorers:
             raise ValueError(f"{scorer} is not a valid scorer. Options: {self.scorers}")
         else:
@@ -244,6 +217,47 @@ class NNet:
             keys = locals()
             del keys['self']
             print(keys)
+
+    @staticmethod
+    def Activation(act, x, d=False):
+        if act == 'sigmoid':
+            if d:
+               return (1.0/(1.0 + np.exp(-x))) * (1-(1.0/(1.0 + np.exp(-x))))
+            else:
+                return 1.0/(1.0 + np.exp(-x))
+        if act == 'tanh':
+            if d:
+                return 1.0 - np.tanh(x)**2
+            else:
+                return np.tanh(x)
+        if act == 'relu':
+            if d:
+                return 1 if x > 0 else 0
+            else:
+                return np.maximum(0,x)
+        if act == 'leaky_relu':
+            if d:
+                return 1 if x > 0 else .01
+            else:
+                return np.maximum(.01*x, x)
+        if act == 'softmax':
+            exps = np.exp(x - x.max())
+            #return np.exp(x) / np.sum(np.exp(x))
+            return exps / np.sum(exps, axis=0)
+
+    @staticmethod
+    def Loss(loss, y_pred, y_true):
+        if loss == 'cce':
+            losses = []
+            for pred, label in zip(y_pred, y_true):
+                pred /= pred.sum(axis=-1, keepdims=True)
+                pred = np.clip(pred, 1e-7, 1 - 1e-7)
+                losses.append(np.sum(label * -np.log(pred), axis=-1, keepdims=False))
+            return np.mean(losses)
+        if loss == 'mae': #L1
+            return np.sum(np.absolute(y_pred - y_true))
+        if loss == 'mse': #L2
+            return np.sum((y_pred - y_true)**2) / y_true.size
 
     def train(self, data, target):
         if data is None:
@@ -293,8 +307,6 @@ class NNet:
             # loop through batches
             while not batch_finished:
                 # print the epoch, batch and sample info
-                print(f"Epoch {i+1}/{self.epochs}\tBatch {count}/{batches}\t Samples {ebatch}/{self.train_size}", end='\r')
-
                 #set batches
                 xtrain, ytrain = X_train[sbatch:ebatch], Y_train[sbatch:ebatch]
 
@@ -302,13 +314,13 @@ class NNet:
                 output = self.forward(xtrain)
 
                 # calculate loss from the output of the forward pass to ytrain
-                loss_list = []
-                for s in range(len(ytrain)):
-                    loss_list.append(self.loss(ytrain[s], output[s]))
-                loss = np.sum(loss_list)
-                
+                loss = self.Loss(self.loss, output, ytrain)
+                # cce = tf.keras.losses.CategoricalCrossentropy()
+                # loss2 = cce(ytrain, output)
+                # print(f"({loss2}")
                 # gradient descent (backwards pass here)
-                self.backProp(loss)
+                print(f"Epoch {i+1}/{self.epochs}\tSamples {ebatch}/{self.train_size}\tTrain Loss {loss:4f}", end='\r')
+                self.backProp(loss, output, ytrain)
 
                 # move to the next batch
                 sbatch = ebatch
@@ -327,41 +339,39 @@ class NNet:
                 count += 1
 
             # validate the newly optimized weights and biases
-            valid = self.validate()
+            valid_loss, valid_acc = self.validate()
 
             #print loss and accuracy after each epoch
-            print(f"\nLoss: {loss:.5} | Accuracy: {valid:.3%}")
+            print(f"\nVal Loss: {loss:.4f} | Val Accuracy: {valid_acc:.3%}")
             # self.output = np.concatenate(output_list)
 
     def forward(self, X):
 
-        if self.layers == 1:
-            # set last output the sole hidden layer pass forward
-            last_output = np.dot(X, self.weights[0]) + self.biases[0]
-            Activate = self.activations(self.layer_activations[0])
-            last_output = Activate(last_output)
-        else:
-            # for all other layers, use the previous layer's input as X
-            for layer_num in range(len(self.weights)):
-                # skip on first layer iteration (last output not set yet)
-                if layer_num != 0:
-                    X = last_output
+        for weight, bias, activation in zip(self.weights, self.biases, self.activations):
+            X = np.dot(X, weight) + bias
+            X = self.Activation(activation, X)
+        return X
 
-                last_output = (np.dot(X, self.weights[layer_num])+ self.biases[layer_num])
-                Activate = self.activations(self.layer_activations[layer_num])
-                last_output = Activate(last_output)
+    def backProp(self, loss, output, ytrain):
 
-        output = np.dot(last_output, self.output_weights) + self.output_biases
-        Activate = self.activations(self.output_activation)
-        return Activate(output)
-
-    def backProp(self, loss):
         pass
-        #adjust weights here
+        # cost = np.mean(ytrain-output)
+        # print(cost)
+        # delta = self.Activation(self.activations[-1], loss, d=True) * cost
+        # for index in range(len(self.weights)-1, 0, -1):
+        #     delta = np.dot(self.weights[index].T, delta) * self.Activation(self.activations[index-1], loss, d=True)
+        #     delta_bias = delta
+        #     self.weights[index] -= self.learn_rate * self.gradient(delta, self.activations[index])
+        #     self.biases[index] -= self.learn_rate * self.gradient(delta_bias, self.activations[index])
+
+    def gradient(self, x, act):
+        return np.dot(x.T, self.Activation(act, x, d=True))
 
     def validate(self):
         
         predictions = self.forward(self.X_valid)
+
+        valid_loss = self.Loss(self.loss, predictions, self.Y_valid)
 
         if self.output_size > 1:
             targets = np.argmax(self.Y_valid, axis=1)
@@ -371,7 +381,7 @@ class NNet:
 
         correct = np.sum(predictions == targets)
         valid_acc =  correct/self.valid_size
-        return valid_acc
+        return valid_loss, valid_acc
 
     # Automatic predictions and evaluations based on test data
     def evaluate(self, data, target):
@@ -400,10 +410,7 @@ class NNet:
 
         predictions = self.forward(data)
 
-        loss_list = []
-        for s in range(target.shape[0]):
-            loss_list.append(self.loss(target[s], predictions[s]))
-        loss = np.sum(loss_list)
+        loss = self.Loss(self.loss, predictions, target)
 
         if self.output_size > 1:
             targets = np.argmax(target, axis=1)
@@ -413,8 +420,8 @@ class NNet:
 
         self.correct = np.sum(predictions == targets)
         self.test_acc = self.correct/target.shape[0]
-        print(f"Acc:\t{self.correct}/{target.shape[0]} ({self.test_acc:.2%})")
-        print(f"Loss:\t{loss:.5}\n")
+        print(f"Test Acc:\t{self.correct}/{target.shape[0]} ({self.test_acc:.2%})")
+        print(f"Test Loss:\t{loss:.4f}\n")
 
     def save(self, file):
         path = 'models/' + file + '.pkl'
@@ -430,33 +437,27 @@ class NNet:
             return dill.load(f)
 
     def predict(self, data):
-        # Perform same flattening (if applicable) and transformations to outside data to predict with:
+        if data is None:
+            raise ValueError("X is None")
+        if not isinstance(data, np.ndarray):
+            try:
+                data = np.array(data)
+            except:
+                raise TypeError(f"Cannot convert X of type {type(data)} to a NumPy array")
         if self.flatten:
-            data = data.reshape(-1)
+            if len(data.shape) == 2:
+                data = data.flatten()
+            else:
+                data = data.reshape(data.shape[0], -1)
 
-        # 1 hidden layer only
-        if self.layers == 1:
-            last_output = np.dot(data, self.weights[0]) + self.biases[0]
-            Activate = self.activations(self.layer_activations[0])
-            last_output = Activate(last_output)
-        # multiple hidden layers
-        else:
-            for layer_num in range(len(self.weights)):
-                # skip on first layer iteration (last_output not set yet)
-                if layer_num != 0:
-                    data = last_output
-
-                last_output = (np.dot(data, self.weights[layer_num]) + self.biases[layer_num])
-                Activate = self.activations(self.layer_activations[layer_num])
-                last_output = Activate(last_output)
-
-        output = np.dot(last_output, self.output_weights) + self.output_biases
-        Activate = self.activations(self.output_act)
-        output = Activate(output)
+        output = self.forward(data)
 
         if self.output_size > 1:
-            prediction = np.argmax(output)
+            if output.shape[0] > 1:
+                prediction = np.argmax(output, axis=1)
+            else:
+                prediction = np.argmax(output)
             score = np.amax(output)
             return prediction, score
         else:
-            return output
+            return prediction
