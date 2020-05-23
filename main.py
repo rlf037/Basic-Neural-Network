@@ -1,7 +1,8 @@
 #!/Users/rlf/anaconda3/bin/python
+
 import numpy as np
-from neuralnetwork import NNet
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+from neuralnetwork2 import NN
 
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
@@ -9,33 +10,31 @@ with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 # === HOUSE PRICES ===
 # with np.load('datasets/houseprices.npz') as data: X_train, Y_train, X_test = data['X_train'], data['Y_train'], data['X_test']
 
-# X = np.array([[1, 2, 3, 2.5], [2., 5., -1., 2], [-1.5, 2.7, 3.3, -0.8]]) 
-# Y = np.array(['2', '1', '2'])
-
 # === PRE-PROCESSING ===
-X = NNet.Normalize(X)
-Y, code = NNet.Encode(Y)
-X_train, X_test, Y_train, Y_test = NNet.Split(X, Y)
+X = X.reshape(X.shape[0], -1)
+X = NN.Normalize(X)
+Y, code = NN.Encode(Y)
+X_train, X_test, Y_train, Y_test = NN.Split(X, Y)
 # === NEURAL NETWORK ===
-model = NNet(verbose=False)
-model.input(X_train.shape)
-model.hidden(neurons=100, activation='ReLU')
-model.output((Y_train.shape[0], 10), activation='softmax')
-model.compile(loss='categorical_crossentropy', learn_rate=0.1)
+model = NN(verbose=True)
+model.input(input_size=X_train.shape[1])
+model.hidden(neurons=100, activation='relu', dropout=0.25)
+model.hidden(neurons=100, activation='relu', dropout=0.1)
+model.output(output_size=len(np.unique(Y_train)), activation='softmax')
+model.compile(loss='scce', learn_rate=0.01)
 model.train(X_train, Y_train, batch_size=128, epochs=15, valid_split=0.1)
 model.evaluate(X_test, Y_test)
 
 # model.save('mnist')
-# mnist = NNet.load('mnist')
+# mnist = NN.Load('mnist')
 
-# digit = np.random.randint(0, X.shape[0])
-# prediction, acc = model.predict(X[digit])
+digit = np.random.randint(0, X.shape[0])
+prediction, acc = model.predict(X[digit])
 
-# print(f'Model: {code[prediction]} ({acc:.2%}) | Actual: {code[np.argmax(Y[digit])]}')
+print(f'Model: {code[prediction]} ({acc:.2%}) | Actual: {code[Y[digit]]}')
 
-# plt.imshow(X[digit], cmap='bone_r')
-# plt.show()
-
+plt.imshow(X[digit].reshape(28, 28), cmap='bone_r')
+plt.show()
 
 # cce for one hot encoded
 # scce for integers
