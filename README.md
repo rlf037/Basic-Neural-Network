@@ -1,6 +1,6 @@
 # Basic Neural Network
 
-### v0.50
+### v1.00
 
 A simple Neural Network written in Python without the use of external libraries (except NumPy).
 
@@ -36,27 +36,20 @@ import numpy as np
 from neuralnetwork import NN
 
 # === MNIST HANDWRITTEN DIGITS ===
-with np.load('mnist.npz') as data:
-	X, Y = (
-	    np.concatenate((data['x_train'], data['x_test']), axis=0),
-	    np.concatenate((data['y_train'], data['y_test']), axis=0),
-	)
+with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 
-# convert labels to strings rather than integers
-Y = np.array([str(x) for x in Y])
-
+# === PRE-PROCESSING ===
+X = NNet.Normalize(X)
+Y, code = NNet.Encode(Y)
+X_train, X_test, Y_train, Y_test = NNet.Split(X, Y)
 # === NEURAL NETWORK ===
-nn = NN(verbose=True)
-nn.input(data=X, target=Y)
-nn.transform("normalize")
-nn.split(test_split=1/7, shuffle=True)
-nn.addLayer(neurons=64, activation="relu", dropout=False)
-nn.addLayer(neurons=128, activation="relu", dropout=True)
-nn.addLayer(neurons=64, activation="relu", dropout=False)
-nn.output(activation="softmax")
-nn.compile(valid_split=1/10, loss='cce', optimizer="adam", scorer="accuracy", learn_rate=0.001)
-nn.train(batch_size=32, epochs=10)
-nn.evaluate()
+model = NNet(verbose=False)
+model.input(X_train.shape)
+model.hidden(neurons=100, activation='ReLU')
+model.output((Y_train.shape[0], 10), activation='softmax')
+model.compile(loss='categorical_crossentropy', learn_rate=0.1)
+model.train(X_train, Y_train, batch_size=128, epochs=15, valid_split=0.1)
+model.evaluate(X_test, Y_test)
 
 nn.save('mnist')
 mnist = NN.load('mnist')
