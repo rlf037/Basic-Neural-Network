@@ -179,16 +179,11 @@ class NN:
  
             # validate the newly optimized weights and biases with new data
             if self.valid_split: self.valid_loss, self.valid_acc = self.validate()
-            
-            # full forward pass of the whole training data to determine epoch loss/acc
-            output = self.forward(X_train)
-            loss = self.Loss(output, Y_train)
-            predictions = np.argmax(output, axis=1)
-            acc = np.mean(predictions==Y_train)
             # add the current loss/acc to history to plot later on
+            loss = np.mean(loss_list)
+            acc = np.mean(acc_list)
             self.train_hist_loss.append(loss)
             self.train_hist_acc.append(acc)
-            # add the current validation to history to plot later on
             self.val_hist_loss.append(self.valid_loss)
             self.val_hist_acc.append(self.valid_acc)
             # print the validation loss & acc too
@@ -348,22 +343,22 @@ class NN:
         try: 
             import matplotlib.pyplot as plt
             plt.plot(self.train_hist_loss)
-            plt.plot(self.train_hist_acc)
+            plt.plot(self.val_hist_loss)
             plt.xlabel('Epoch')
-            plt.ylabel('Loss/Accuracy')
-            plt.title('Model [Training]')
-            plt.legend(['Loss', 'Accuracy'], loc='best')
+            plt.ylabel('Loss')
+            plt.title('Model Loss')
+            plt.legend(['Training', 'Validation'], loc='best')
             plt.show()
 
-            plt.plot(self.val_hist_loss)
+            plt.plot(self.train_hist_acc)
             plt.plot(self.val_hist_acc)
             plt.xlabel('Epoch')
-            plt.ylabel('Loss/Accuracy')
-            plt.title('Model [Validation]')
-            plt.legend(['Loss', 'Accuracy'], loc='best')
+            plt.ylabel('Accuracy')
+            plt.title('Model Accuracy')
+            plt.legend(['Training', 'Validation'], loc='best')
             plt.show()
         except:
-            print("Error: Module 'matplotlib' is required to plot.")
+            print("Error: 'matplotlib' is required to plot.")
 
     def save(self, file):
 
