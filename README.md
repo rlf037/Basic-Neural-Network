@@ -4,7 +4,7 @@
 
 A simple Neural Network written in Python usually only NumPy.
 
-Includes:
+Includes:  
     - `Encoder` (one-hot and/or class integers)  
     - `LoadModel` (loads a saved model's weights/biases to re-use)  
     - `MinMaxScaler` (scales data between 0 and 1 (normalisation))  
