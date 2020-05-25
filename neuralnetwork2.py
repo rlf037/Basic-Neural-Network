@@ -91,7 +91,7 @@ class NN:
 
         if self.batch_size >= self.train_size: self.batch_size = self.train_size
         progress_bar = 30
-        batches = int(np.ceil(self.train_size/self.batch_size))
+        total_batches = int(np.ceil(self.train_size/self.batch_size))
 
         print(f'\nTrain on {self.train_size} samples, validate on {self.valid_size} samples:')
         # ====================================================================================
@@ -143,11 +143,11 @@ class NN:
                     self.weights[i] -= self.learn_rate * dw
                     self.biases[i] -= self.learn_rate * db
 
-                if batches == 1:
+                if total_batches == 1:
                     pb = '='*progress_bar
                 else:
                     # mapped current_batch -> batches to 1 -> progress_bar
-                    pb = int(((current_batch-1)/(batches-1))*(progress_bar-1)+1)
+                    pb = int(((current_batch-1)/(total_batches-1))*(progress_bar-1)+1)
                     if pb == progress_bar:
                         pb = '='*pb
                     else:
@@ -176,6 +176,13 @@ class NN:
 
     def Activate(self, act, x, dx=False, i=None):
 
+        if act == 'relu':
+            if not dx:
+                return np.maximum(0, x)
+            else:
+                x[self.act_inputs[i]<=0] = 0
+                return x
+
         if act == 'sigmoid':
             sig = 1./(1. + np.exp(-x))
             if not dx: 
@@ -188,13 +195,6 @@ class NN:
                 return np.tanh(x)
             else:
                 return 1. - self.act_inputs[i]**2
-
-        if act == 'relu':
-            if not dx:
-                return np.maximum(0, x)
-            else:
-                x[self.act_inputs[i]<=0] = 0
-                return x
 
         if act == 'leaky_relu':
             if not dx:
@@ -265,8 +265,8 @@ class NN:
     def backward(self, X, Y):
 
         # initialise delta weights & biases
-        delta_weights = [np.zeros(w.shape) for w in self.weights]
-        delta_biases = [np.zeros(b.shape) for b in self.biases]
+        delta_weights = [np.ones(w.shape) for w in self.weights]
+        delta_biases = [np.ones(b.shape) for b in self.biases]
         
         # calculate derivitive loss
         X = self.Loss(X, Y, dx=True)
