@@ -2,7 +2,7 @@
 
 ### v1.04
 
-A simple Neural Network written in Python usually only NumPy libraries.
+A simple Neural Network written in Python usually only NumPy.
 
 Includes:
     - `Encoder` (one-hot and/or class integers)
