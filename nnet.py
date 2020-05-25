@@ -114,8 +114,10 @@ class NN:
             end = self.batch_size
             current_batch_finished = False
             is_last_run = False
-
             current_batch = 1
+
+            loss_list = []
+            acc_list = []
 
             # DROPOUT
             if len(self.dropouts)>0:
@@ -132,10 +134,12 @@ class NN:
 
                 # calculate loss of the batch
                 loss = self.Loss(output, Y)
+                loss_list.append(loss)
 
                 # accuracy of the batch
                 preds = np.argmax(output, axis=1)
                 acc = np.mean(preds==Y)
+                acc_list.append(acc)
 
                 # get the delta weights and biases (backpropagation)
                 delta_weights, delta_biases = self.backward(output, Y)
@@ -157,6 +161,8 @@ class NN:
 
                 print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f}", end='\r')
 
+                # setup next batch
+                start = end
                 """if the next batch will go equal or beyond the total training 
                    size set the end of the batch to the training size"""
                 if end + self.batch_size >= self.train_size:
@@ -166,13 +172,16 @@ class NN:
                     # set the batch loop to it's last run
                     is_last_run = True
                 # increase the end of the batch samples by a batch size
-                else: end += self.batch_size
+                else:
+                    end += self.batch_size
                 current_batch += 1
                 # ==== END BATCH ITERATION =====
  
             # validate the newly optimized weights and biases with new data
             if self.valid_split: self.valid_loss, self.valid_acc = self.validate()
             # add the current loss/acc to history to plot later on
+            loss = np.mean(loss_list)
+            acc = np.mean(acc_list)
             self.train_hist_loss.append(loss)
             self.train_hist_acc.append(acc)
             self.val_hist_loss.append(self.valid_loss)
@@ -262,7 +271,7 @@ class NN:
             self.inputs = []
             self.act_inputs = []
 
-        for i, (w, b, a) in enumerate(zip(self.weights, self.biases, self.activations)):
+        for w, b, a in zip(self.weights, self.biases, self.activations):
             if train: self.inputs.append(X)
             X = np.dot(X, w) + b
             if train: self.act_inputs.append(X)
@@ -271,10 +280,9 @@ class NN:
 
     def backward(self, X, Y):
 
-        # initialise delta weights & biases
-        delta_weights = [np.array([]) for w in self.weights]
-        delta_biases = [np.array([]) for b in self.biases]
-        
+        delta_weights = []
+        delta_biases = []
+
         # calculate derivitive loss
         X = self.Loss(X, Y, dx=True)
 
@@ -285,8 +293,8 @@ class NN:
             X = self.Activate(a, X, dx=True, i=i)
             
             # delta values calculated here
-            delta_weights[i] = np.dot(self.inputs[i].T, X)
-            delta_biases[i] = np.sum(X, axis=0, keepdims=True)
+            delta_weights.insert(0, np.dot(self.inputs[i].T, X))
+            delta_biases.insert(0, np.sum(X, axis=0, keepdims=True))
 
             # set X for the next layer
             X = np.dot(X, self.weights[i].T)
