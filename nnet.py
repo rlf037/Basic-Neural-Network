@@ -9,11 +9,11 @@ class NN:
         self.biases = []
         self.activations = []
         self.dropouts = []
-        self.valid_loss = .0
-        self.valid_acc = .0
+        self.hist_loss = []
+        self.hist_acc = []
         self.activators = ['relu', 'tanh', 'sigmoid', 'softmax', 'leaky_relu']
         self.optimizers = ['adam', 'sgd', 'rmsprop', 'adadelta']
-        self.losses = ['mae', 'mse', 'cce', 'scce', 'bce', 'categorical_crossentropy', 'sparse_categorical_crossentrophy', 'binary_crossentrophy']
+        self.losses = ['mae', 'mse', 'cce', 'scce', 'bce', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy']
         
         if self.verbose:
             print('* Neural Network Initialised *')
@@ -38,7 +38,7 @@ class NN:
         self.previous_output_size = neurons
 
         if self.verbose:
-            if dropout: print(f"\t\t|\t\t\nHidden [{neurons}] ({activation}) - Dropout [{dropout:.0%}]")
+            if dropout: print(f"\t\t|\t\t\nHidden [{neurons}] ({activation}) - Dropout {dropout:.0%}")
             else: print(f"\t\t|\t\t\nHidden [{neurons}] ({activation})")
 
     def output(self, output_size=None, activation=None):
@@ -100,7 +100,7 @@ class NN:
         for epoch in range(1, self.epochs+1):
 
             # Epoch 1/15 etc.
-            print(f"\nEpoch {epoch}/{self.epochs}")
+            print(f"Epoch {epoch}/{self.epochs}")
 
             # shuffle the data each epoch, except the first epoch
             if epoch != 1:
@@ -151,9 +151,9 @@ class NN:
                     if pb == progress_bar:
                         pb = '='*pb
                     else:
-                        pb = '='*pb+'>'
+                        pb = '='*pb+'>'+'.'*(progress_bar-pb-1)
 
-                print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}", end='\r')
+                print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f}", end='\r')
 
                 """if the next batch will go equal or beyond the total training 
                    size set the end of the batch to the training size"""
@@ -170,8 +170,11 @@ class NN:
  
             # validate the newly optimized weights and biases with new data
             if self.valid_split: self.valid_loss, self.valid_acc = self.validate()
+            # add the current loss/acc to history to plot later on
+            self.hist_loss.append(loss)
+            self.hist_acc.append(acc)
 
-            print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}", end='\r')
+            print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}")
             # === END EPOCH ITERATION ==== 
 
     def Activate(self, act, x, dx=False, i=None):
@@ -226,7 +229,7 @@ class NN:
             else:
                 raise NotImplementedError()
 
-        if self.loss == 'binary_crossentrophy' or self.loss == 'bce':
+        if self.loss == 'binary_crossentropy' or self.loss == 'bce':
             if not dx:
                 x = x[range(samples), y]
                 return np.mean(-np.log(x))
@@ -234,7 +237,7 @@ class NN:
                 x[range(samples), y] -= 1
                 return x / samples
 
-        if self.loss == 'categorical_crossentrophy' or self.loss == 'cce':
+        if self.loss == 'categorical_crossentropy' or self.loss == 'cce':
             if not dx:
                 return np.mean(-np.log(x) * (y))
             else:
@@ -265,8 +268,8 @@ class NN:
     def backward(self, X, Y):
 
         # initialise delta weights & biases
-        delta_weights = [np.ones(w.shape) for w in self.weights]
-        delta_biases = [np.ones(b.shape) for b in self.biases]
+        delta_weights = [np.array([]) for w in self.weights]
+        delta_biases = [np.array([]) for b in self.biases]
         
         # calculate derivitive loss
         X = self.Loss(X, Y, dx=True)
@@ -324,47 +327,19 @@ class NN:
         prediction = np.argmax(prediction)
         return prediction, score
 
-    @staticmethod
-    def Split(data, target, test_split=1/7, shuffle=True, seed=None):
-       
-        samples = data.shape[0]
-        if shuffle:
-            rp = np.random.RandomState(seed=seed).permutation(samples)
-            data, target = data[rp], target[rp]
-        test_size = int(samples * test_split)
-        train_size = samples - test_size
-        return data[:train_size], data[-test_size:], target[:train_size], target[-test_size:]
-
-    @staticmethod
-    def Encode(labels):
-        count = 0
-        output = []
-        seen = {}
-        code = {}
-        total = set()
-        for label in labels:
-            if label in seen: output.append(seen[label])
-            else:
-                seen[label] = count
-                output.append(seen[label])
-                count += 1
-                code[len(total)] = label
-                total.add(label)
-        return np.array(output), code
-
-    @staticmethod
-    def Normalize(data):
-        xmax, xmin = np.amax(data), np.amin(data)
-        normalize = lambda x: (x - xmin) / (xmax - xmin)
-        return normalize(data)
-
-    @staticmethod
-    def Standardize(data):
-        xmean, xstd = np.mean(data), np.std(data)
-        standardize = lambda x: (x - xmean) / xstd
-        return standardize(data)
+    def plot(self):
+        try: 
+            import matplotlib.pyplot as plt
+            plt.plot(self.hist_loss)
+            plt.plot(self.hist_acc)
+            plt.title('Training Loss & Accuracy')
+            plt.legend(['Loss', 'Accuracy'], loc='upper right')
+            plt.show()
+        except:
+            print("Error: Module 'matplotlib' is required to plot.")
 
     def save(self, file):
+
         path = 'models/' + file
         np.savez_compressed(path, np.array((self.weights, self.biases, self.activations)))
         print(f"'{file.upper()}' model saved.")
@@ -374,10 +349,72 @@ class LoadModel(NN):
     def __init__(self, file):
 
         path = 'models/' + file + '.npz'
+
         with np.load(path, allow_pickle=True) as data:
             self.weights = data['arr_0'][0]
             self.biases = data['arr_0'][1]
             self.activations = data['arr_0'][2]
-            self.act_inputs = []
 
         print(f"'{file.upper()}' model loaded.")
+
+class Encoder:
+
+    def __init__(self):
+
+        self.count = 0
+        self.output = []
+        self.seen = {}
+        self.code = {}
+        self.total = set()
+
+    def encode(self, labels, one_hot=False):
+
+        for label in labels:
+
+            if label in self.seen:
+                self.output.append(self.seen[label])
+            else:
+                self.seen[label] = self.count
+                self.output.append(self.seen[label])
+                self.count += 1
+                self.code[len(self.total)] = label
+                self.total.add(label)
+
+        if one_hot:
+            return np.eye(len(self.total))[self.output]
+        else:
+            return np.array(self.output)
+
+    def decode(self, data):
+
+        try:
+            iter(data)
+            return [self.code[x] for x in data]
+        except:
+            return self.code[data]
+
+class MinMaxScaler:
+
+    @staticmethod
+    def transform(data):
+
+        xmax, xmin = np.amax(data), np.amin(data)
+        minmax = lambda x: (x - xmin) / (xmax - xmin)
+
+        return minmax(data)
+
+class Split:
+
+    @staticmethod
+    def split(data, target, test_split=1/7, shuffle=True, seed=None):
+
+        samples = data.shape[0]
+
+        if shuffle:
+            perm = np.random.RandomState(seed=seed).permutation(samples)
+            data, target = data[perm], target[perm]
+
+        test_size = int(samples * test_split)
+        train_size = samples - test_size
+
+        return data[:train_size], data[-test_size:], target[:train_size], target[-test_size:]

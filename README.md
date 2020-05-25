@@ -1,63 +1,50 @@
 # Basic Neural Network
 
-### v1.00
+### v1.04
 
-A simple Neural Network written in Python without the use of external libraries (except NumPy).
+A simple Neural Network written in Python usually only NumPy libraries.
 
-`neuralnetwork.py` contains the class for the Neural Network (NNet). It is an easy to use implementation in that data transformation and encoding as well as train/test split can all be done in the same class.
+Includes:
+    - `Encoder` (one-hot and/or class integers)
+    - `LoadModel` (loads a saved model's weights/biases to re-use)
+    - `MinMaxScaler` (scales data between 0 and 1 (normalisation))
+    - `Split` (splits the data into training and testing sets)
 
-For classification, categorical labels must be strings and then converted to NumPy arrays (although this can be done for you automatically if possible). One-hot encoding returns and a dictionary code along the encoded labels to decode the predicted labels back into their categorical string form (check the usage).
-
-There is the aility to save and load the model from within the class built-in as shown in the advanced usage. However it requires the dill module (pickle doesn't store lambda functions...).
-Use `pip install dill` to install it.
+`nnet.py` contains the class for the Neural Network (NN) and other class functions.
 
 ## Usage
 
-#### Basic
-```python
-from neuralnetwork import NNet
-
-X, Y = some_dataset
-
-model = NNet()
-Y, code = NNet.encode(Y)
-X = NNet.normalize(X)
-X_train, X_test, Y_train, Y_test = NNet.split(X, Y)
-model.input(X_train.shape)
-model.hidden()
-model.output(Y_train.shape)
-model.compile()
-model.train(X_train, Y_train)
-```
-
-#### Advanced `main.py`
+#### main.py
 ```python
 import numpy as np
-from neuralnetwork import NN
+from nnet import NN, Encoder, MinMaxScaler, Split, LoadModel
+import matplotlib.pyplot as plt
 
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 
 # === PRE-PROCESSING ===
-X = NNet.Normalize(X)
-Y, code = NNet.Encode(Y)
-X_train, X_test, Y_train, Y_test = NNet.Split(X, Y)
+X = X.reshape(X.shape[0], -1)
+X = MinMaxScaler.transform(X)
+enc = Encoder()
+Y = enc.encode(Y)
+X_train, X_test, Y_train, Y_test = Split.split(X, Y)
 # === NEURAL NETWORK ===
-model = NNet(verbose=False)
-model.input(X_train.shape)
-model.hidden(neurons=100, activation='ReLU')
-model.output((Y_train.shape[0], 10), activation='softmax')
-model.compile(loss='categorical_crossentropy', learn_rate=0.1)
-model.train(X_train, Y_train, batch_size=128, epochs=15, valid_split=0.1)
+model = NN(verbose=True)
+model.input(input_size=X_train.shape[1])
+model.hidden(neurons=512, activation='relu', dropout=0.2)
+model.hidden(neurons=512, activation='relu')
+model.output(output_size=10, activation='softmax')
+model.compile(loss='sparse_categorical_crossentropy')
+model.train(X_train, Y_train, batch_size=128, epochs=15, valid_split=0.2)
 model.evaluate(X_test, Y_test)
-
-nn.save('mnist')
-mnist = NN.load('mnist')
-
-import matplotlib.pyplot as plt
-rand_digit = np.random.randint(0, X.shape[0])
-prediction = mnist.predict(X[rand_digit])
-print(f'Model: {prediction} | Actual: {Y[rand_digit]}')
-plt.imshow(X[rand_digit], cmap='gray')
+model.plot()
+# === SAVE & LOAD ===
+model.save('mnist')
+mnist = LoadModel('mnist')
+# === PLOT PREDICTION ===
+rnum = np.random.randint(0, X.shape[0])
+prediction, acc = mnist.predict(X[rnum])
+print(f'\nModel: {enc.decode(prediction)} ({acc:.2%}) | Actual: {enc.decode(Y[rnum])}')
+plt.imshow(X[rnum].reshape(28, 28), cmap='bone_r')
 plt.show()
-```
