@@ -1,5 +1,4 @@
 import numpy as np
-import dill, time
 
 class NN:
     def __init__(self, verbose=False):
@@ -13,19 +12,19 @@ class NN:
         self.valid_loss = .0
         self.valid_acc = .0
         self.activators = ['relu', 'tanh', 'sigmoid', 'softmax', 'leaky_relu']
-        self.optimizers = ["adam"]
+        self.optimizers = ['adam', 'sgd', 'rmsprop', 'adadelta']
         self.losses = ['mae', 'mse', 'cce', 'scce', 'bce', 'categorical_crossentropy', 'sparse_categorical_crossentrophy', 'binary_crossentrophy']
-        self.progress_bar = 30
+        
         if self.verbose:
-            print("* Neural Network Initialised *")
+            print('* Neural Network Initialised *')
 
     def input(self, input_size=None):
 
         self.input_size = input_size
-
+        
         if self.verbose:
-                print("---------------------------")
-                print(f"\tInput [{self.input_size}]")
+                print('---------------------------')
+                print(f'\tInput [{self.input_size}]')
 
     def hidden(self, neurons=50, activation="relu", dropout=False):
         
@@ -59,16 +58,25 @@ class NN:
 
         self.loss = loss.lower()
         self.learn_rate = learn_rate
+        self.optimizer = optimizer
 
         if self.verbose:
             s = locals()
-            print(f"Optimizer: {s['optimizer'].upper()} & Learning Rate: {s['learn_rate']}")
+            del s['self']
+            print(s)
 
     def train(self, data, target, batch_size=64, epochs=15, valid_split=0.1):
 
         self.batch_size = batch_size
         self.epochs = epochs
         self.valid_split = valid_split
+
+        if self.verbose:
+            s = locals()
+            del s['self']
+            del s['data']
+            del s['target']
+            print(s)
 
         if valid_split:
             self.valid_size = int(data.shape[0] * self.valid_split)
@@ -81,26 +89,18 @@ class NN:
             X_train = data
             Y_train = target
 
-        if self.verbose:
-            s = locals()
-            print(f"Batch Size: {s['batch_size']} - Epochs: {s['epochs']} - Validation Split: {s['valid_split']}")
-            del s
-        # ====================================================================================
-
         print(f'\nTrain on {self.train_size} samples, validate on {self.valid_size} samples:')
-
+        # ====================================================================================
+        progress_bar = 30
         # EPOCH ITERATION
         for i in range(self.epochs):
-
-            # time each epoch
-            start_etime = time.time()
 
             print(f"\nEpoch {i+1}/{self.epochs}")
 
             # shuffle the data each epoch, except the first epoch
             if i != 0:
-                r_perm = np.random.RandomState().permutation(self.train_size)
-                X_train, Y_train = X_train[r_perm], Y_train[r_perm]
+                rp = np.random.RandomState().permutation(self.train_size)
+                X_train, Y_train = X_train[rp], Y_train[rp]
 
             # batch info
             start = 0
@@ -108,7 +108,7 @@ class NN:
             current_batch_finished = False
             is_last_run = False
             batches = int(np.ceil(self.train_size/self.batch_size))
-            count = 1
+            current_batch = 1
 
             # DROPOUT
             if len(self.dropouts)>0:
@@ -121,35 +121,34 @@ class NN:
                 X, Y = X_train[start:end], Y_train[start:end]
 
                 # feed forward the batch
-                output = self.forward(X)
+                X = self.forward(X, train=True)
 
-                # calculate loss
-                loss = self.Loss(output, Y)
+                # calculate loss of the batch
+                loss = self.Loss(X, Y)
 
                 # accuracy of the batch
-                preds = np.argmax(output, axis=1)
+                preds = np.argmax(X, axis=1)
                 acc = np.mean(preds==Y)
 
                 # get the delta weights and biases (backpropagation)
-                delta_weights, delta_biases = self.backward(output, Y)
+                delta_weights, delta_biases = self.backward(X, Y)
 
                 # update weights and biases (gradient descent)
                 for i, (dw, db) in enumerate(zip(delta_weights, delta_biases)):
                     self.weights[i] -= self.learn_rate * dw
                     self.biases[i] -= self.learn_rate * db
 
-                if not current_batch_finished:
-                    end_etime = start_etime
+                if batches == 1:
+                    pb = '='*progress_bar
+                else:
+                    # mapped current_batch -> batches to 1 -> progress_bar
+                    pb = int(((current_batch-1)/(batches-1))*(progress_bar-1)+1)
+                    if pb == progress_bar:
+                        pb = '='*pb
+                    else:
+                        pb = '='*pb+'>'
 
-                # progress bar
-                equals = ((count-1)/(batches-0))*(self.progress_bar-0)+0
-                if int(equals) == self.progress_bar-1: equals = '='*int(equals)
-                else: equals = '='*int(equals)+'>'
-
-                print(f"{end}/{self.train_size} [{equals}] - {int(end_etime-start_etime)}s - loss: {np.mean(loss):.4f} - accuracy: {acc:.3%} - val_loss: {np.mean(self.valid_loss):.4f} - val_accuracy: {self.valid_acc:.3%}", end='\r')
-               
-                # setup next batch
-                start = end
+                print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}", end='\r')
 
                 """if the next batch will go equal or beyond the total training 
                    size set the end of the batch to the training size"""
@@ -161,26 +160,31 @@ class NN:
                     is_last_run = True
                 # increase the end of the batch samples by a batch size
                 else: end += self.batch_size
-                count += 1
+                current_batch += 1
                 # ==== END BATCH ITERATION =====
  
             # validate the newly optimized weights and biases with new data
             if self.valid_split: self.valid_loss, self.valid_acc = self.validate()
 
-            end_etime = time.time()
-            print(f"{end}/{self.train_size} [{equals}] - {int(end_etime-start_etime)}s - loss: {np.mean(loss):.4f} - accuracy: {acc:.3%} - val_loss: {np.mean(self.valid_loss):.4f} - val_accuracy: {self.valid_acc:.3%}", end='\r')
+            print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}", end='\r')
             # === END EPOCH ITERATION ==== 
 
     def Activate(self, act, x, der=False, layer=None):
+
         self.act_inputs.append(x)
+
         if act == 'sigmoid':
-            if der: 
+            sig = 1./(1. + np.exp(-x))
+            if not der: 
+                return sig
+            else:
                 return sig * (1. - sig)
-            else: return 1./(1. + np.exp(-x))
 
         if act == 'tanh':
-            if not der: return np.tanh(x)
-            else: return 1.0 - x**2
+            if not der:
+                return np.tanh(x)
+            else:
+                return 1. - self.act_inputs[layer]**2
 
         if act == 'relu':
             if not der:
@@ -192,48 +196,62 @@ class NN:
         if act == 'leaky_relu':
             if not der:
                 return np.maximum(x*.01, x)
-
             else:
-                x[self.act_inputs[layer]<= 0] = .01
+                x[self.act_inputs[layer]<=0.1] = .01
                 return x
 
         if act == 'softmax':
             if not der:
                 exp_values = np.exp(x - np.max(x, axis=1, keepdims=True))
                 return exp_values / np.sum(exp_values, axis=1, keepdims=True)
-
             else:
                 return x
 
     def Loss(self, y_pred, y_true, der=False):
+
         if self.loss == 'sparse_categorical_crossentropy' or self.loss == 'scce':
-            # Number of samples in a batch
             samples = y_pred.shape[0]
             if not der:
-                # Probabilities for target values - only if categorical labels
-                if len(y_true.shape) == 1:
-                    y_pred = y_pred[range(samples), y_true]
-                # Losses
+                y_pred = y_pred[range(samples), y_true]
                 negative_log_likelihoods = -np.log(y_pred)
-                # Mask values - only for one-hot encoded labels
-                if len(y_true.shape) == 2:
-                    negative_log_likelihoods *= y_true
-                # Overall loss
                 return np.sum(negative_log_likelihoods) / samples
             else:
                 y_pred[range(samples), y_true] -= 1
                 y_pred /= samples
                 return y_pred
-        if self.loss == 'mean_absolute_error' or self.loss == 'mae': return np.sum(np.absolute(y_pred - y_true))
-        if self.loss == 'mean_squared_error' or self.loss == 'mse': #L2
-            losses = []
-            for pred, true in zip(y_pred, y_true):
-                losses.append(np.sum((pred - true)**2))
-            return losses
-        if self.loss == 'bce' or self.loss == 'binary_crossentrophy':
-            raise NotImplementedError()
-        if self.loss == 'cce' or self.loss == 'categorical_crossentrophy':
-            raise NotImplementedError()
+
+        if self.loss == 'mean_absolute_error' or self.loss == 'mae':
+            if not der:
+                return np.sum(np.absolute(y_pred - y_true))
+            else:
+                raise NotImplementedError()
+
+        if self.loss == 'mean_squared_error' or self.loss == 'mse':
+            if not der:
+                losses = []
+                for pred, true in zip(y_pred, y_true):
+                    losses.append(np.sum((pred - true)**2))
+                return losses
+            else:
+                raise NotImplementedError()
+
+        if self.loss == 'binary_crossentrophy' or self.loss == 'bce':
+            if not der:
+                raise NotImplementedError()
+            else:
+                raise NotImplementedError()
+
+        if self.loss == 'categorical_crossentrophy' or self.loss == 'cce':
+
+            samples = y_pred.shape[0]
+            if not der:
+                negative_log_likelihoods = -np.log(y_pred)
+                negative_log_likelihoods *= y_true
+                return np.sum(negative_log_likelihoods) / samples
+            else:
+                y_pred[range(samples), y_true] -= 1
+                y_pred /= samples
+                return y_pred
 
     def dropout(self):
         for i, drop in enumerate(self.dropouts):
@@ -241,16 +259,16 @@ class NN:
                 drops = np.random.binomial(1, 1-drop, self.weights[i].shape)
                 self.weights[i] *= drops
 
-    def forward(self, X):
+    def forward(self, X, train=False):
 
-        self.inputs = []
-        self.act_inputs = []
+        if train:
+            self.inputs = []
+            self.act_inputs = []
 
         for i, (w, b, a) in enumerate(zip(self.weights, self.biases, self.activations)):
-            self.inputs.append(X)
+            if train: self.inputs.append(X)
             X = np.dot(X, w) + b
             X = self.Activate(a, X)
-
         return X
 
     def backward(self, X, Y):
@@ -350,14 +368,19 @@ class NN:
         return standardize(data)
 
     def save(self, file):
-
-        path = 'models/' + file + '.pkl'
-        with open(path, 'wb') as f: dill.dump(self, f)
+        path = 'models/' + file
+        np.savez_compressed(path, np.array((self.weights, self.biases, self.activations)))
         print(f"'{file.upper()}' model saved.")
 
-    @staticmethod
-    def Load(file):
-        path = 'models/' + file + '.pkl'
-        with open(path, 'rb') as f:
-            print(f"'{file.upper()}' model loaded.\n")
-            return dill.load(f)
+class LoadModel(NN):
+
+    def __init__(self, file):
+
+        path = 'models/' + file + '.npz'
+        with np.load(path, allow_pickle=True) as data:
+            self.weights = data['arr_0'][0]
+            self.biases = data['arr_0'][1]
+            self.activations = data['arr_0'][2]
+            self.act_inputs = []
+
+        print(f"'{file.upper()}' model loaded.")
