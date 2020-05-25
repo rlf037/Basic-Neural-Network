@@ -9,8 +9,10 @@ class NN:
         self.biases = []
         self.activations = []
         self.dropouts = []
-        self.hist_loss = []
-        self.hist_acc = []
+        self.train_hist_loss = []
+        self.train_hist_acc = []
+        self.val_hist_loss = []
+        self.val_hist_acc = []
         self.activators = ['relu', 'tanh', 'sigmoid', 'softmax', 'leaky_relu']
         self.optimizers = ['adam', 'sgd', 'rmsprop', 'adadelta']
         self.losses = ['mae', 'mse', 'cce', 'scce', 'bce', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy']
@@ -171,9 +173,11 @@ class NN:
             # validate the newly optimized weights and biases with new data
             if self.valid_split: self.valid_loss, self.valid_acc = self.validate()
             # add the current loss/acc to history to plot later on
-            self.hist_loss.append(loss)
-            self.hist_acc.append(acc)
-
+            self.train_hist_loss.append(loss)
+            self.train_hist_acc.append(acc)
+            self.val_hist_loss.append(self.valid_loss)
+            self.val_hist_acc.append(self.valid_acc)
+            # print the validation loss & acc too
             print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}")
             # === END EPOCH ITERATION ==== 
 
@@ -308,7 +312,7 @@ class NN:
 
     def evaluate(self, data, target):
 
-        print(f"\n\nTesting Set Evaluation:")
+        print(f"\nTesting Set Evaluation:")
         print("-----------------------")
 
         predictions = self.forward(data)
@@ -330,9 +334,19 @@ class NN:
     def plot(self):
         try: 
             import matplotlib.pyplot as plt
-            plt.plot(self.hist_loss)
-            plt.plot(self.hist_acc)
-            plt.title('Training Loss & Accuracy')
+            plt.plot(self.train_hist_loss)
+            plt.plot(self.train_hist_acc)
+            plt.xlabel('Epoch')
+            plt.ylabel('Loss/Accuracy')
+            plt.title('Model [Training]')
+            plt.legend(['Loss', 'Accuracy'], loc='upper right')
+            plt.show()
+
+            plt.plot(self.val_hist_loss)
+            plt.plot(self.val_hist_acc)
+            plt.xlabel('Epoch')
+            plt.ylabel('Loss/Accuracy')
+            plt.title('Model [Validation]')
             plt.legend(['Loss', 'Accuracy'], loc='upper right')
             plt.show()
         except:

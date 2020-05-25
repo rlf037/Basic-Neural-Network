@@ -5,10 +5,6 @@ import matplotlib.pyplot as plt
 
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
-
-X = X[:4000]
-Y = Y[:4000]
-
 # === PRE-PROCESSING ===
 X = X.reshape(X.shape[0], -1)
 X = MinMaxScaler.transform(X)
@@ -18,19 +14,20 @@ X_train, X_test, Y_train, Y_test = Split.split(X, Y)
 # === NEURAL NETWORK ===
 model = NN(verbose=True)
 model.input(input_size=X_train.shape[1])
-model.hidden(neurons=512, activation='relu')
-model.hidden(neurons=512, activation='relu')
+model.hidden(neurons=512, activation='relu', dropout=0.4)
+model.hidden(neurons=512, activation='relu', dropout=0.2)
 model.output(output_size=10, activation='softmax')
-model.compile(loss='scce', learn_rate=0.01)
-model.train(X_train, Y_train, batch_size=256, epochs=15, valid_split=0.1)
+model.compile(loss='sparse_categorical_crossentropy', learn_rate=0.01)
+model.train(X_train, Y_train, batch_size=32, epochs=25, valid_split=0.1)
 model.evaluate(X_test, Y_test)
 model.plot()
 # === SAVE & LOAD ===
-model.save('mnist')
-mnist = LoadModel('mnist')
+# model.save('mnist')
+# mnist = LoadModel('mnist')
 # === PLOT PREDICTION ===
 rnum = np.random.randint(0, X.shape[0])
-prediction, acc = mnist.predict(X[rnum])
-print(f'\nModel: {enc.decode(prediction)} ({acc:.2%}) | Actual: {enc.decode(Y[rnum])}')
-plt.imshow(X[rnum].reshape(28, 28), cmap='bone_r')
+prediction, acc = model.predict(X[rnum])
+print(f'Model: {enc.decode(prediction)} ({acc:.2%}) | Actual: {enc.decode(Y[rnum])}')
+img_dims = int(np.sqrt(X.shape[1]))
+plt.imshow(X[rnum].reshape(img_dims, img_dims), cmap='bone_r')
 plt.show()
