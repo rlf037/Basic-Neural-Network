@@ -179,11 +179,16 @@ class NN:
  
             # validate the newly optimized weights and biases with new data
             if self.valid_split: self.valid_loss, self.valid_acc = self.validate()
+            
+            # full forward pass of the whole training data to determine epoch loss/acc
+            output = self.forward(X_train)
+            loss = self.Loss(output, Y_train)
+            predictions = np.argmax(output, axis=1)
+            acc = np.mean(predictions==Y_train)
             # add the current loss/acc to history to plot later on
-            loss = np.mean(loss_list)
-            acc = np.mean(acc_list)
             self.train_hist_loss.append(loss)
             self.train_hist_acc.append(acc)
+            # add the current validation to history to plot later on
             self.val_hist_loss.append(self.valid_loss)
             self.val_hist_acc.append(self.valid_acc)
             # print the validation loss & acc too
@@ -199,12 +204,12 @@ class NN:
                 x[self.act_inputs[i]<=0] = 0
                 return x
 
-        if act == 'sigmoid':
-            sig = 1./(1. + np.exp(-x))
-            if not dx: 
-                return sig
+        if act == 'leaky_relu':
+            if not dx:
+                return np.maximum(.01, x)
             else:
-                return sig * (1. - sig)
+                x[self.act_inputs[i]<=0] = .01
+                return x
 
         if act == 'tanh':
             if not dx:
@@ -212,12 +217,12 @@ class NN:
             else:
                 return 1. - self.act_inputs[i]**2
 
-        if act == 'leaky_relu':
-            if not dx:
-                return np.maximum(.01, x)
+        if act == 'sigmoid':
+            sig = 1./(1. + np.exp(-x))
+            if not dx: 
+                return sig
             else:
-                x[self.act_inputs[i]<=0] = .01
-                return x
+                return sig * (1. - sig)
 
         if act == 'softmax':
             if not dx:
@@ -347,7 +352,7 @@ class NN:
             plt.xlabel('Epoch')
             plt.ylabel('Loss/Accuracy')
             plt.title('Model [Training]')
-            plt.legend(['Loss', 'Accuracy'], loc='upper right')
+            plt.legend(['Loss', 'Accuracy'], loc='best')
             plt.show()
 
             plt.plot(self.val_hist_loss)
@@ -355,7 +360,7 @@ class NN:
             plt.xlabel('Epoch')
             plt.ylabel('Loss/Accuracy')
             plt.title('Model [Validation]')
-            plt.legend(['Loss', 'Accuracy'], loc='upper right')
+            plt.legend(['Loss', 'Accuracy'], loc='best')
             plt.show()
         except:
             print("Error: Module 'matplotlib' is required to plot.")
