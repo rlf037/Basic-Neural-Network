@@ -5,10 +5,10 @@
 A simple Neural Network written in Python usually only NumPy.
 
 Includes:  
-    - `Encoder` (one-hot and/or class integers)  
-    - `LoadModel` (loads a saved model's weights/biases to re-use)  
-    - `MinMaxScaler` (scales data between 0 and 1 (normalisation))  
-    - `Split` (splits the data into training and testing sets)  
+    - `Encoder` One-hot and/or class integers.  
+    - `LoadModel` Loads a saved model's weights/biases to re-use.  
+    - `MinMaxScaler` Scales data between 0 and 1 (normalisation).  
+    - `Split` Splits the data into training and testing sets.  
 
 `nnet.py` contains the class for the Neural Network (NN) and other class functions.
 
@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
-
 # === PRE-PROCESSING ===
 X = X.reshape(X.shape[0], -1)
 X = MinMaxScaler.transform(X)
@@ -44,7 +43,8 @@ model.save('mnist')
 mnist = LoadModel('mnist')
 # === PLOT PREDICTION ===
 rnum = np.random.randint(0, X.shape[0])
-prediction, acc = mnist.predict(X[rnum])
-print(f'\nModel: {enc.decode(prediction)} ({acc:.2%}) | Actual: {enc.decode(Y[rnum])}')
-plt.imshow(X[rnum].reshape(28, 28), cmap='bone_r')
+prediction, acc = model.predict(X[rnum])
+print(f'Model: {enc.decode(prediction)} ({acc:.2%}) | Actual: {enc.decode(Y[rnum])}')
+img_dims = int(np.sqrt(X.shape[1]))
+plt.imshow(X[rnum].reshape(img_dims, img_dims), cmap='bone_r')
 plt.show()
