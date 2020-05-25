@@ -1,5 +1,4 @@
 import numpy as np
-import dill, time
 
 class NN:
     def __init__(self, verbose=False):
