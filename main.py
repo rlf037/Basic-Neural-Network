@@ -8,8 +8,8 @@ with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 # === HOUSE PRICES ===
 # with np.load('datasets/houseprices.npz') as data: X_train, Y_train, X_test = data['X_train'], data['Y_train'], data['X_test']
 
-# X = X[:1000]
-# Y = Y[:1000]
+X = X[:10000]
+Y = Y[:10000]
 
 # === PRE-PROCESSING ===
 X = X.reshape(X.shape[0], -1)
@@ -19,8 +19,8 @@ X_train, X_test, Y_train, Y_test = NN.Split(X, Y)
 # === NEURAL NETWORK ===
 model = NN(verbose=True)
 model.input(input_size=X_train.shape[1])
-model.hidden(neurons=50, activation='relu')
-model.hidden(neurons=50, activation='relu')
+model.hidden(neurons=12, activation='relu')
+model.hidden(neurons=12, activation='relu')
 model.output(output_size=10, activation='softmax')
 model.compile(loss='scce', learn_rate=0.01)
 model.train(X_train, Y_train, batch_size=128, epochs=15, valid_split=0.1)

@@ -89,16 +89,21 @@ class NN:
             X_train = data
             Y_train = target
 
+        if self.batch_size >= self.train_size: self.batch_size = self.train_size
+        progress_bar = 30
+        batches = int(np.ceil(self.train_size/self.batch_size))
+
         print(f'\nTrain on {self.train_size} samples, validate on {self.valid_size} samples:')
         # ====================================================================================
-        progress_bar = 30
-        # EPOCH ITERATION
-        for i in range(self.epochs):
 
-            print(f"\nEpoch {i+1}/{self.epochs}")
+        # EPOCH ITERATION
+        for epoch in range(1, self.epochs+1):
+
+            # Epoch 1/15 etc.
+            print(f"\nEpoch {epoch}/{self.epochs}")
 
             # shuffle the data each epoch, except the first epoch
-            if i != 0:
+            if epoch != 1:
                 rp = np.random.RandomState().permutation(self.train_size)
                 X_train, Y_train = X_train[rp], Y_train[rp]
 
@@ -107,7 +112,7 @@ class NN:
             end = self.batch_size
             current_batch_finished = False
             is_last_run = False
-            batches = int(np.ceil(self.train_size/self.batch_size))
+
             current_batch = 1
 
             # DROPOUT
@@ -121,17 +126,17 @@ class NN:
                 X, Y = X_train[start:end], Y_train[start:end]
 
                 # feed forward the batch
-                X = self.forward(X, train=True)
+                output = self.forward(X, train=True)
 
                 # calculate loss of the batch
-                loss = self.Loss(X, Y)
+                loss = self.Loss(output, Y)
 
                 # accuracy of the batch
-                preds = np.argmax(X, axis=1)
+                preds = np.argmax(output, axis=1)
                 acc = np.mean(preds==Y)
 
                 # get the delta weights and biases (backpropagation)
-                delta_weights, delta_biases = self.backward(X, Y)
+                delta_weights, delta_biases = self.backward(output, Y)
 
                 # update weights and biases (gradient descent)
                 for i, (dw, db) in enumerate(zip(delta_weights, delta_biases)):
@@ -169,95 +174,80 @@ class NN:
             print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}", end='\r')
             # === END EPOCH ITERATION ==== 
 
-    def Activate(self, act, x, der=False, layer=None):
-
-        self.act_inputs.append(x)
+    def Activate(self, act, x, dx=False, i=None):
 
         if act == 'sigmoid':
             sig = 1./(1. + np.exp(-x))
-            if not der: 
+            if not dx: 
                 return sig
             else:
                 return sig * (1. - sig)
 
         if act == 'tanh':
-            if not der:
+            if not dx:
                 return np.tanh(x)
             else:
-                return 1. - self.act_inputs[layer]**2
+                return 1. - self.act_inputs[i]**2
 
         if act == 'relu':
-            if not der:
+            if not dx:
                 return np.maximum(0, x)
             else:
-                x[self.act_inputs[layer]<=0] = 0
+                x[self.act_inputs[i]<=0] = 0
                 return x
 
         if act == 'leaky_relu':
-            if not der:
-                return np.maximum(x*.01, x)
+            if not dx:
+                return np.maximum(.01, x)
             else:
-                x[self.act_inputs[layer]<=0.1] = .01
+                x[self.act_inputs[i]<=0] = .01
                 return x
 
         if act == 'softmax':
-            if not der:
+            if not dx:
                 exp_values = np.exp(x - np.max(x, axis=1, keepdims=True))
                 return exp_values / np.sum(exp_values, axis=1, keepdims=True)
             else:
                 return x
 
-    def Loss(self, y_pred, y_true, der=False):
+    def Loss(self, x, y, dx=False):
 
-        if self.loss == 'sparse_categorical_crossentropy' or self.loss == 'scce':
-            samples = y_pred.shape[0]
-            if not der:
-                y_pred = y_pred[range(samples), y_true]
-                negative_log_likelihoods = -np.log(y_pred)
-                return np.sum(negative_log_likelihoods) / samples
-            else:
-                y_pred[range(samples), y_true] -= 1
-                y_pred /= samples
-                return y_pred
+        samples = x.shape[0]
 
         if self.loss == 'mean_absolute_error' or self.loss == 'mae':
-            if not der:
-                return np.sum(np.absolute(y_pred - y_true))
+            if not dx:
+                return np.mean(np.absolute(x - y))
             else:
                 raise NotImplementedError()
 
         if self.loss == 'mean_squared_error' or self.loss == 'mse':
-            if not der:
-                losses = []
-                for pred, true in zip(y_pred, y_true):
-                    losses.append(np.sum((pred - true)**2))
-                return losses
+            if not dx:
+                return np.mean((x - y)**2)
             else:
                 raise NotImplementedError()
 
         if self.loss == 'binary_crossentrophy' or self.loss == 'bce':
-            if not der:
-                raise NotImplementedError()
+            if not dx:
+                x = x[range(samples), y]
+                return np.mean(-np.log(x))
             else:
-                raise NotImplementedError()
+                x[range(samples), y] -= 1
+                return x / samples
 
         if self.loss == 'categorical_crossentrophy' or self.loss == 'cce':
-
-            samples = y_pred.shape[0]
-            if not der:
-                negative_log_likelihoods = -np.log(y_pred)
-                negative_log_likelihoods *= y_true
-                return np.sum(negative_log_likelihoods) / samples
+            if not dx:
+                return np.mean(-np.log(x) * (y))
             else:
-                y_pred[range(samples), y_true] -= 1
-                y_pred /= samples
-                return y_pred
+                x[range(samples), y] -= 1
+                return x / samples
 
-    def dropout(self):
-        for i, drop in enumerate(self.dropouts):
-            if drop:
-                drops = np.random.binomial(1, 1-drop, self.weights[i].shape)
-                self.weights[i] *= drops
+        if self.loss == 'sparse_categorical_crossentropy' or self.loss == 'scce':
+            if not dx:
+                x = x[range(samples), y]
+                return np.mean(-np.log(x))
+            else:
+                x[range(samples), y] -= 1
+                return x / samples
 
     def forward(self, X, train=False):
 
@@ -268,6 +258,7 @@ class NN:
         for i, (w, b, a) in enumerate(zip(self.weights, self.biases, self.activations)):
             if train: self.inputs.append(X)
             X = np.dot(X, w) + b
+            if train: self.act_inputs.append(X)
             X = self.Activate(a, X)
         return X
 
@@ -278,13 +269,13 @@ class NN:
         delta_biases = [np.zeros(b.shape) for b in self.biases]
         
         # calculate derivitive loss
-        X = self.Loss(X, Y, der=True)
+        X = self.Loss(X, Y, dx=True)
 
         # backwards pass calculating derivitive values at each layer
         for i, a in reversed(list(enumerate(self.activations))):
             
             # derivitive loss of the activation functions
-            X = self.Activate(a, X, der=True, layer=i)
+            X = self.Activate(a, X, dx=True, i=i)
             
             # delta values calculated here
             delta_weights[i] = np.dot(self.inputs[i].T, X)
@@ -294,6 +285,12 @@ class NN:
             X = np.dot(X, self.weights[i].T)
         
         return delta_weights, delta_biases
+
+    def dropout(self):
+        for i, drop in enumerate(self.dropouts):
+            if drop:
+                drops = np.random.binomial(1, 1-drop, self.weights[i].shape)
+                self.weights[i] *= drops
 
     def validate(self):
 
