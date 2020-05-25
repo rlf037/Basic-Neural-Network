@@ -25,7 +25,7 @@ class NN:
         self.input_size = input_size
         
         if self.verbose:
-                print('---------------------------')
+                print('-------------------------------')
                 print(f'\tInput [{self.input_size}]')
 
     def hidden(self, neurons=50, activation="relu", dropout=False):
@@ -41,7 +41,7 @@ class NN:
 
         if self.verbose:
             if dropout: print(f"\t\t|\t\t\nHidden [{neurons}] ({activation}) - Dropout {dropout:.0%}")
-            else: print(f"\t\t|\t\t\nHidden [{neurons}] ({activation})")
+            else: print(f"\t\t|\t\t\n\tHidden [{neurons}] ({activation})")
 
     def output(self, output_size=None, activation=None):
 
@@ -52,8 +52,8 @@ class NN:
         self.activations.append(activation.lower())
         
         if self.verbose:
-            print(f"\t\t|\t\t\nOutput [{self.output_size}] ({activation})")
-            print("----------------------------")
+            print(f"\t\t|\t\t\n\tOutput [{self.output_size}] ({activation})")
+            print("-------------------------------")
             print(f"Total Parameters: {self.params:,}")
 
     def compile(self, optimizer="adam", loss=None, learn_rate=1e-3):
