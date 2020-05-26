@@ -13,9 +13,9 @@ class NN:
         self.train_hist_acc = []
         self.val_hist_loss = []
         self.val_hist_acc = []
-        self.activators = ['relu', 'tanh', 'sigmoid', 'softmax', 'leaky_relu']
-        self.optimizers = ['adam', 'sgd', 'rmsprop', 'adadelta']
-        self.losses = ['mae', 'mse', 'cce', 'scce', 'bce', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy']
+        self.activators = {'relu', 'tanh', 'sigmoid', 'softmax', 'leaky_relu'}
+        self.optimizers = {'adam', 'sgd', 'rmsprop', 'adadelta'}
+        self.losses = {'mae', 'mse', 'cce', 'scce', 'bce', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy'}
         
         if self.verbose:
             print('* Neural Network Initialised *')
@@ -304,8 +304,7 @@ class NN:
     def dropout(self):
         for i, drop in enumerate(self.dropouts):
             if drop:
-                drops = np.random.binomial(1, 1-drop, self.weights[i].shape)
-                self.weights[i] *= drops
+                self.weights[i] *= np.random.binomial(1, 1-drop, self.weights[i].shape) / (1-drop)
 
     def validate(self):
 

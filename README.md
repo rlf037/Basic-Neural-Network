@@ -1,6 +1,6 @@
 # Basic Neural Network
 
-### v1.07
+### v1.08
 
 A simple Neural Network written in Python usually only NumPy.
 
@@ -9,6 +9,11 @@ Includes:
     - `LoadModel` Loads a saved model's weights/biases to re-use.  
     - `MinMaxScaler` Scales data between 0 and 1 (normalisation).  
     - `Split` Splits the data into training and testing sets.  
+
+Neural Network:
+    - Activations: `relu` `leaky_relu` `tanh` `sigmoid` `softmax`  
+    - Loss Functions: `spare_categorical_crossentropy` `categorical_crossentropy` `binary_crossentropy` `mean_squared_error` `mean_absolute_error`  
+    - Optimizers: `adam` `rmsprop` `adadelta` `sgd`
 
 `nnet.py` contains the class for the Neural Network (NN) and other class functions.
 
