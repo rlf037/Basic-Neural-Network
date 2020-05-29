@@ -4,6 +4,10 @@
 
 A simple Neural Network written in Python usually only NumPy.
 
+#### TODO:
+
+Add in a stratify feature in Split()
+
 Includes:  
     - `Encoder` One-hot and/or class integers.  
     - `LoadModel` Loads a saved model's weights/biases to re-use.  
