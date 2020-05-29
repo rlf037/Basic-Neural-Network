@@ -2,7 +2,6 @@
 import numpy as np
 from nnet import NN, Encoder, MinMaxScaler, Split, LoadModel
 import matplotlib.pyplot as plt
-
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 # === PRE-PROCESSING ===
@@ -19,7 +18,7 @@ model.hidden(neurons=512, activation='relu')
 model.hidden(neurons=512, activation='relu')
 model.output(output_size=10, activation='softmax')
 model.compile(loss='sparse_categorical_crossentropy', learn_rate=0.01)
-model.train(X_train, Y_train, batch_size=64, epochs=15, valid_split=0.1)
+model.train(X_train, Y_train, batch_size=128, epochs=15, valid_split=0.1)
 model.evaluate(X_test, Y_test)
 model.plot()
 # === SAVE & LOAD ===
