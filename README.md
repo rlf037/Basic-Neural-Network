@@ -21,6 +21,8 @@ Neural Network:
 
 `nnet.py` contains the class for the Neural Network (NN) and other class functions.
 
+##### 98% on MNIST Digits.
+
 ## Usage
 
 #### main.py
