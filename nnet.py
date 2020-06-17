@@ -378,7 +378,7 @@ class LoadModel(NN):
 
         print(f"'{file.upper()}' model loaded.")
 
-class Encoder:
+class PreProcessing:
 
     def __init__(self):
 
@@ -414,17 +414,13 @@ class Encoder:
         except:
             return self.code[data]
 
-class MinMaxScaler:
-
     @staticmethod
-    def transform(data):
+    def normalize(data):
 
         xmax, xmin = np.amax(data), np.amin(data)
         minmax = lambda x: (x - xmin) / (xmax - xmin)
 
         return minmax(data)
-
-class Split:
 
     @staticmethod
     def split(data, target, test_split=1/7, shuffle=True, seed=None):
