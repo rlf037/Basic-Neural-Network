@@ -36,8 +36,8 @@ with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 # === PRE-PROCESSING ===
 X = X.reshape(X.shape[0], -1)
 X = MinMaxScaler.transform(X)
-enc = Encoder()
-Y = enc.encode(Y)
+labels = Encoder()
+Y = labels.encode(Y)
 X_train, X_test, Y_train, Y_test = Split.split(X, Y)
 # === NEURAL NETWORK ===
 model = NN(verbose=True)
@@ -55,7 +55,7 @@ mnist = LoadModel('mnist')
 # === PLOT PREDICTION ===
 rnum = np.random.randint(0, X.shape[0])
 prediction, acc = model.predict(X[rnum])
-print(f'Model: {enc.decode(prediction)} ({acc:.2%}) | Actual: {enc.decode(Y[rnum])}')
+print(f'Model: {labels.decode(prediction)} ({acc:.2%}) | Actual: {labels.decode(Y[rnum])}')
 img_dims = int(np.sqrt(X.shape[1]))
 plt.imshow(X[rnum].reshape(img_dims, img_dims), cmap='bone_r')
 plt.show()

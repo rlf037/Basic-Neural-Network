@@ -7,8 +7,8 @@ with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 # === PRE-PROCESSING ===
 X = X.reshape(X.shape[0], -1)
 X = MinMaxScaler.transform(X)
-enc = Encoder()
-Y = enc.encode(Y)
+labels = Encoder()
+Y = labels.encode(Y)
 X_train, X_test, Y_train, Y_test = Split.split(X, Y)
 del X, Y
 # === NEURAL NETWORK ===
@@ -27,7 +27,7 @@ model.plot()
 # === PLOT PREDICTION ===
 rnum = np.random.randint(0, X_test.shape[0])
 prediction, acc = model.predict(X_test[rnum])
-print(f'Model: {enc.decode(prediction)} ({acc:.2%}) | Actual: {enc.decode(Y_test[rnum])}')
+print(f'Model: {labels.decode(prediction)} ({acc:.2%}) | Actual: {labels.decode(Y_test[rnum])}')
 img_dims = int(np.sqrt(X_test.shape[1]))
 plt.imshow(X_test[rnum].reshape(img_dims, img_dims), cmap='bone_r')
 plt.show()
