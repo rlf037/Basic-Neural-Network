@@ -11,23 +11,23 @@ A simple Neural Network written in Python usually only NumPy.
 Neural Network:  
     - Activations: `relu` `leaky_relu` `tanh` `sigmoid` `softmax`  
     - Loss Functions: `spare_categorical_crossentropy` `categorical_crossentropy` `mse` `mae`  
-    - Optimizers: `adam` `rmsprop` `adadelta` `sgd`  
+    - Optimizers: `adam` `rmsprop` `adadelta` `sgd`    
 
-Functions:
-    - `plot` Plots the model training loss and accuracy.
+Functions:  
+    - `plot` Plots the model training loss and accuracy.  
     - `save` Saves a model's weights & biases.  
 
-PreProcessing: 
-    - `encode` Encodes class labels into one-hot or class codes.
-    - `decode` Decodes one-hot or class codes to class labels.
-    - `normalize` Scales data between 0 and 1.
-    - `split` Splits the data into training and testing sets.
-
-- `LoadModel` Loads a saved model's weights & biases to re-use. 
+PreProcessing:  
+    - `encode` Encodes class labels into one-hot or class codes.  
+    - `decode` Decodes one-hot or class codes to class labels.  
+    - `normalize` Scales data between 0 and 1.  
+    - `split` Splits the data into training and testing sets.  
+  
+- `LoadModel` Loads a saved model's weights & biases to re-use.  
 
 `nnet.py` contains the class for the Neural Network (NN) and other class functions.
 
-Accuracy:
+Accuracy:  
 
 ##### 98% on MNIST Digits.
 
