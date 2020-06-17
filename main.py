@@ -8,7 +8,7 @@ with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 preprocess = PreProcessing()
 X = X.reshape(X.shape[0], -1)
 X = preprocess.normalize(X)
-Y = preprocess.encode(Y)
+Y = preprocess.encode(Y, one_hot=False)
 X_train, X_test, Y_train, Y_test = preprocess.split(X, Y)
 del X, Y
 # === NEURAL NETWORK ===

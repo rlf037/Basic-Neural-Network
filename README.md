@@ -7,20 +7,27 @@ A simple Neural Network written in Python usually only NumPy.
 #### TODO:
 
 - Add in a stratify feature in split()
-- Add in model history
-
-Includes:  
-    - `Encoder` One-hot and/or class integers.  
-    - `LoadModel` Loads a saved model's weights/biases to re-use.  
-    - `MinMaxScaler` Scales data between 0 and 1 (normalisation).  
-    - `Split` Splits the data into training and testing sets.  
 
 Neural Network:  
     - Activations: `relu` `leaky_relu` `tanh` `sigmoid` `softmax`  
     - Loss Functions: `spare_categorical_crossentropy` `categorical_crossentropy` `mse` `mae`  
     - Optimizers: `adam` `rmsprop` `adadelta` `sgd`  
 
+Functions:
+    - `plot` Plots the model training loss and accuracy.
+    - `save` Saves a model's weights & biases.  
+
+PreProcessing: 
+    - `encode` Encodes class labels into one-hot or class codes.
+    - `decode` Decodes one-hot or class codes to class labels.
+    - `normalize` Scales data between 0 and 1.
+    - `split` Splits the data into training and testing sets.
+
+- `LoadModel` Loads a saved model's weights & biases to re-use. 
+
 `nnet.py` contains the class for the Neural Network (NN) and other class functions.
+
+Accuracy:
 
 ##### 98% on MNIST Digits.
 
@@ -37,7 +44,7 @@ with np.load('datasets/mnist.npz') as data: X, Y = data['X'], data['Y']
 preprocess = PreProcessing()
 X = X.reshape(X.shape[0], -1)
 X = preprocess.normalize(X)
-Y = preprocess.encode(Y)
+Y = preprocess.encode(Y, one_hot=False)
 X_train, X_test, Y_train, Y_test = preprocess.split(X, Y)
 del X, Y
 # === NEURAL NETWORK ===
