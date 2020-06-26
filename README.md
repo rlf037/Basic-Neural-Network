@@ -16,6 +16,8 @@ Neural Network:
 Functions:  
     - `plot` Plots the model training loss and accuracy.  
     - `save` Saves a model's weights & biases.  
+    - `evaluate` Evaluates a model's accuracy.
+    - `predict` Returns an encoded prediction.
 
 PreProcessing:  
     - `encode` Encodes class labels into one-hot or class codes.  
@@ -27,12 +29,11 @@ Training Callbacks:
     - `early_stoppage` Stops the model if it hasn't improved in x epochs.  
     - `save_weights` Only save the best weights that model recorded.
   
-- `LoadModel` Loads a saved model's weights & biases to re-use.  
+Class `LoadModel` Loads a saved model.  
 
 `nnet.py` contains the class for the Neural Network (NN) and other class functions.
 
 Accuracy:  
-
 ##### 97% on 1st epoch. 98% after 3 epochs.
 
 ## Usage
@@ -57,7 +58,7 @@ model.input(input_size=X_train.shape[1])
 model.hidden(neurons=512, activation='relu')
 model.hidden(neurons=512, activation='relu')
 model.output(output_size=10, activation='softmax')
-model.compile(loss='sparse_categorical_crossentropy', learn_rate=0.01)
+model.compile(loss='sparse_categorical_crossentropy', learn_rate=0.1, early_stopping=5, save_weights=True)
 model.train(X_train, Y_train, batch_size=128, epochs=15, valid_split=0.1)
 model.evaluate(X_test, Y_test)
 model.plot()
