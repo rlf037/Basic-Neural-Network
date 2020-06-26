@@ -1,6 +1,6 @@
 # Basic Neural Network
 
-### v1.09
+### v1.10
 
 A simple Neural Network written in Python usually only NumPy.
 
@@ -11,7 +11,7 @@ A simple Neural Network written in Python usually only NumPy.
 Neural Network:  
     - Activations: `relu` `leaky_relu` `tanh` `sigmoid` `softmax`  
     - Loss Functions: `spare_categorical_crossentropy` `categorical_crossentropy` `mse` `mae`  
-    - Optimizers: `adam` `rmsprop` `adadelta` `sgd`    
+    - Optimizers: `adam` `rmsprop` `adadelta` `sgd`  
 
 Functions:  
     - `plot` Plots the model training loss and accuracy.  
@@ -22,6 +22,10 @@ PreProcessing:
     - `decode` Decodes one-hot or class codes to class labels.  
     - `normalize` Scales data between 0 and 1.  
     - `split` Splits the data into training and testing sets.  
+
+Training Callbacks:  
+    - `early_stoppage` Stops the model if it hasn't improved in x epochs.  
+    - `save_weights` Only save the best weights that model recorded.
   
 - `LoadModel` Loads a saved model's weights & biases to re-use.  
 
@@ -29,7 +33,7 @@ PreProcessing:
 
 Accuracy:  
 
-##### 98% on MNIST Digits.
+##### 97% on 1st epoch. 98% after 3 epochs.
 
 ## Usage
 
