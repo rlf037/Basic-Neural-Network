@@ -252,6 +252,9 @@ class NN:
                 return exp_values / np.sum(exp_values, axis=1, keepdims=True)
             else:
                 return x
+            
+        if act == 'linear':
+            return x
 
     def Loss(self, x, y, dx=False):
 
