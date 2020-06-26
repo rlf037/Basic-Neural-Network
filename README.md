@@ -12,7 +12,7 @@ A simple Neural Network written in Python usually only NumPy.
 
 Neural Network:  
     - Activations: `relu`, `tanh`, `sigmoid`, `softmax`  
-    - Loss Functions: `spare_categorical_crossentropy` or `scce`, `categorical_crossentropy` or `cce`, `mse`, `mae`  
+    - Loss Functions: `spare_categorical_crossentropy` or `scce`, `categorical_crossentropy` or `cce`, `mean_squared_error` or `mse`, `mean_absolute_error` or `mae`  
     - Optimizers: `adam` `rmsprop` `adadelta` `sgd`  
 
 Functions:  
