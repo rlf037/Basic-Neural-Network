@@ -165,7 +165,7 @@ class NN:
                     else:
                         pb = '='* pb + '>' + '.' * (progress_bar - pb - 1)
 
-                print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f}", end='\r')
+                print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.5f} - accuracy: {acc:.5f}", end='\r')
 
                 # setup next batch
                 start = end
@@ -195,7 +195,7 @@ class NN:
             self.val_hist_loss.append(self.valid_loss)
             self.val_hist_acc.append(self.valid_acc)
             # print the validation loss & acc too
-            print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}")
+            print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.5f} - accuracy: {acc:.5f} - val_loss: {self.valid_loss:.5f} - val_accuracy: {self.valid_acc:.5f}")
 
             # === EARLY STOPPING & SAVE BEST MODEL ===
             if (self.valid_acc <= best_acc):
@@ -208,14 +208,14 @@ class NN:
                 no_improve = 0
 
             if (no_improve == early_stopping):
-                print(f'\nEarly stoppage. Model has not improved in {early_stopping} epochs.')
+                print(f'\n*Early Stoppage* Model has not improved in {early_stopping} epochs.')
                 break
             # === END EPOCH ITERATION ====
 
         if (self.valid_acc < best_acc):
             self.weights = self.best_weights
             self.biases = self.best_biases
-            print(f'\nLoaded the weights that achieved {self.val_hist_acc[epoch-1]:.4f} accuracy.')
+            print(f'\nLoaded the weights that achieved {best_acc:.5f} accuracy.')
 
     def Activate(self, act, x, dx=False, i=None):
 
