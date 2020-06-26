@@ -212,8 +212,10 @@ class NN:
                 break
             # === END EPOCH ITERATION ====
 
-        self.weights = self.best_weights
-        self.biases = self.best_biases
+        if (self.valid_acc < best_acc):
+            self.weights = self.best_weights
+            self.biases = self.best_biases
+            print(f'\nLoaded the weights that achieved {self.val_hist_acc[epoch-1]:.4f} accuracy.')
 
     def Activate(self, act, x, dx=False, i=None):
 
