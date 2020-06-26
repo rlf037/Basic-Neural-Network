@@ -17,9 +17,9 @@ Neural Network:
 
 Functions:  
     - `plot` Plots the model training loss and accuracy.  
-    - `save` Saves a model's weights & biases.  
-    - `evaluate` Evaluates a model's accuracy.
-    - `predict` Returns an encoded prediction.
+    - `save_model` Saves a model.
+    - `evaluate` Evaluates a model's accuracy.  
+    - `predict` Returns a prediction.
     
 Callbacks:  
     - `early_stopping` Stops the model if it hasn't improved in x epochs.  
