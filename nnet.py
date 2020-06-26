@@ -67,11 +67,14 @@ class NN:
             del s['self']
             print(s)
 
-    def train(self, data, target, batch_size=64, epochs=15, valid_split=0.1, early_stopping=None):
+    def train(self, data, target, batch_size=64, epochs=15, valid_split=0.1, early_stopping=None, save_weights=True):
 
         self.batch_size = batch_size
         self.epochs = epochs
         self.valid_split = valid_split
+
+        self.best_weights = None
+        self.best_biases = None
 
         if self.verbose:
             s = locals()
@@ -141,7 +144,7 @@ class NN:
 
                 # accuracy of the batch
                 preds = np.argmax(output, axis=1)
-                acc = np.mean(preds==Y)
+                acc = np.mean(preds == Y)
                 acc_list.append(acc)
 
                 # get the delta weights and biases (backpropagation)
@@ -153,25 +156,26 @@ class NN:
                     self.biases[i] -= self.learn_rate * db
 
                 if total_batches == 1:
-                    pb = '='*progress_bar
+                    pb = '=' * progress_bar
                 else:
                     # mapped current_batch -> batches to 1 -> progress_bar
-                    pb = int(((current_batch-1)/(total_batches-1))*(progress_bar-1)+1)
+                    pb = int(((current_batch - 1) / (total_batches -1 )) * (progress_bar -1 ) + 1)
                     if pb == progress_bar:
-                        pb = '='*pb
+                        pb = '=' * pb
                     else:
-                        pb = '='*pb+'>'+'.'*(progress_bar-pb-1)
+                        pb = '='* pb + '>' + '.' * (progress_bar - pb - 1)
 
                 print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f}", end='\r')
 
                 # setup next batch
                 start = end
-                """if the next batch will go equal or beyond the total training 
+                """if the next batch will go equal or beyond the total training
                    size set the end of the batch to the training size"""
                 if end + self.batch_size >= self.train_size:
                     end = self.train_size
                     # if it was it's last run, it's now complete
-                    if is_last_run: current_batch_finished = True
+                    if is_last_run:
+                        current_batch_finished = True
                     # set the batch loop to it's last run
                     is_last_run = True
                 # increase the end of the batch samples by a batch size
@@ -193,18 +197,23 @@ class NN:
             # print the validation loss & acc too
             print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}")
 
-            # === EARLY STOPPING ===
+            # === EARLY STOPPING & SAVE BEST MODEL ===
             if (self.valid_acc <= best_acc):
                 no_improve += 1
             else:
                 best_acc = self.valid_acc
+                if save_weights:
+                    self.best_weights = self.weights
+                    self.best_biases = self.biases
                 no_improve = 0
 
             if (no_improve == early_stopping):
                 print(f'\nEarly stoppage. Model has not improved in {early_stopping} epochs.')
                 break
-
             # === END EPOCH ITERATION ====
+
+        self.weights = self.best_weights
+        self.biases = self.best_biases
 
     def Activate(self, act, x, dx=False, i=None):
 
@@ -212,7 +221,7 @@ class NN:
             if not dx:
                 return np.maximum(0, x)
             else:
-                x[self.act_inputs[i]<=0] = 0
+                x[self.act_inputs[i] <= 0] = 0
                 return x
 
         if act == 'leaky_relu':

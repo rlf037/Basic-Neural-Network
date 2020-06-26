@@ -19,7 +19,7 @@ model.hidden(neurons=512, activation='relu')
 model.hidden(neurons=512, activation='relu')
 model.output(output_size=10, activation='softmax')
 model.compile(loss='sparse_categorical_crossentropy', learn_rate=0.1)
-model.train(X_train, Y_train, batch_size=32, epochs=15, valid_split=0.1, early_stopping=5)
+model.train(X_train, Y_train, batch_size=32, epochs=15, valid_split=0.1, early_stopping=5, save_weights=True)
 model.evaluate(X_test, Y_test)
 model.plot()
 # === SAVE & LOAD ===
