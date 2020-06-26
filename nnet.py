@@ -67,7 +67,7 @@ class NN:
             del s['self']
             print(s)
 
-    def train(self, data, target, batch_size=64, epochs=15, valid_split=0.1):
+    def train(self, data, target, batch_size=64, epochs=15, valid_split=0.1, early_stopping=None):
 
         self.batch_size = batch_size
         self.epochs = epochs
@@ -94,6 +94,9 @@ class NN:
         if self.batch_size >= self.train_size: self.batch_size = self.train_size
         progress_bar = 30
         total_batches = int(np.ceil(self.train_size/self.batch_size))
+
+        best_acc = 0
+        no_improve = 0
 
         print(f'\nTrain on {self.train_size} samples, validate on {self.valid_size} samples:')
         # ====================================================================================
@@ -176,9 +179,10 @@ class NN:
                     end += self.batch_size
                 current_batch += 1
                 # ==== END BATCH ITERATION =====
- 
+
             # validate the newly optimized weights and biases with new data
-            if self.valid_split: self.valid_loss, self.valid_acc = self.validate()
+            if self.valid_split:
+                self.valid_loss, self.valid_acc = self.validate()
             # add the current loss/acc to history to plot later on
             loss = np.mean(loss_list)
             acc = np.mean(acc_list)
@@ -188,7 +192,19 @@ class NN:
             self.val_hist_acc.append(self.valid_acc)
             # print the validation loss & acc too
             print(f"{end}/{self.train_size} [{pb}] - loss: {loss:.4f} - accuracy: {acc:.4f} - val_loss: {self.valid_loss:.4f} - val_accuracy: {self.valid_acc:.4f}")
-            # === END EPOCH ITERATION ==== 
+
+            # === EARLY STOPPING ===
+            if (self.valid_acc <= best_acc):
+                no_improve += 1
+            else:
+                best_acc = self.valid_acc
+                no_improve = 0
+
+            if (no_improve == early_stopping):
+                print(f'\nEarly stoppage. Model has not improved in {early_stopping} epochs.')
+                break
+
+            # === END EPOCH ITERATION ====
 
     def Activate(self, act, x, dx=False, i=None):
 
@@ -203,7 +219,7 @@ class NN:
             if not dx:
                 return np.maximum(.01, x)
             else:
-                x[self.act_inputs[i]<=0] = .01
+                x[self.act_inputs[i] < 0] = .01
                 return x
 
         if act == 'tanh':
@@ -213,8 +229,8 @@ class NN:
                 return 1. - self.act_inputs[i]**2
 
         if act == 'sigmoid':
-            sig = 1./(1. + np.exp(-x))
-            if not dx: 
+            sig = 1. / (1. + np.exp(-x))
+            if not dx:
                 return sig
             else:
                 return sig * (1. - sig)
@@ -272,9 +288,11 @@ class NN:
             self.act_inputs = []
 
         for w, b, a in zip(self.weights, self.biases, self.activations):
-            if train: self.inputs.append(X)
+            if train:
+                self.inputs.append(X)
             X = np.dot(X, w) + b
-            if train: self.act_inputs.append(X)
+            if train:
+                self.act_inputs.append(X)
             X = self.Activate(a, X)
         return X
 
@@ -288,23 +306,23 @@ class NN:
 
         # backwards pass calculating derivitive values at each layer
         for i, a in reversed(list(enumerate(self.activations))):
-            
+
             # derivitive loss of the activation functions
             X = self.Activate(a, X, dx=True, i=i)
-            
+
             # delta values calculated here
             delta_weights.insert(0, np.dot(self.inputs[i].T, X))
             delta_biases.insert(0, np.sum(X, axis=0, keepdims=True))
 
             # set X for the next layer
             X = np.dot(X, self.weights[i].T)
-        
+
         return delta_weights, delta_biases
 
     def dropout(self):
         for i, drop in enumerate(self.dropouts):
             if drop:
-                self.weights[i] *= np.random.binomial(1, 1-drop, self.weights[i].shape) / (1-drop)
+                self.weights[i] *= np.random.binomial(1, 1 - drop, self.weights[i].shape) / (1-drop)
 
     def validate(self):
 
@@ -339,7 +357,7 @@ class NN:
         return prediction, score
 
     def plot(self):
-        try: 
+        try:
             import matplotlib.pyplot as plt
             plt.plot(self.train_hist_loss)
             plt.plot(self.val_hist_loss)
