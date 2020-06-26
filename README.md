@@ -1,16 +1,18 @@
 # Basic Neural Network
 
-### v1.10
+### v1.11
 
 A simple Neural Network written in Python usually only NumPy.
 
 #### TODO:
 
-- Add in a stratify feature in split()
+- Add a stratify feature for split()
+- Convolution layers?
+- L1/L2 reguluarization
 
 Neural Network:  
-    - Activations: `relu` `leaky_relu` `tanh` `sigmoid` `softmax`  
-    - Loss Functions: `spare_categorical_crossentropy` `categorical_crossentropy` `mse` `mae`  
+    - Activations: `relu`, `tanh`, `sigmoid`, `softmax`  
+    - Loss Functions: `spare_categorical_crossentropy` or `scce`, `categorical_crossentropy` or `cce`, `mse`, `mae`  
     - Optimizers: `adam` `rmsprop` `adadelta` `sgd`  
 
 Functions:  
@@ -18,31 +20,29 @@ Functions:
     - `save` Saves a model's weights & biases.  
     - `evaluate` Evaluates a model's accuracy.
     - `predict` Returns an encoded prediction.
+    
+Callbacks:  
+    - `early_stopping` Stops the model if it hasn't improved in x epochs.  
+    - `save_weights` Only save the best weights that model recorded.  
 
-PreProcessing:  
+PreProcessing Class:  
     - `encode` Encodes class labels into one-hot or class codes.  
     - `decode` Decodes one-hot or class codes to class labels.  
     - `normalize` Scales data between 0 and 1.  
     - `split` Splits the data into training and testing sets.  
-
-Training Callbacks:  
-    - `early_stoppage` Stops the model if it hasn't improved in x epochs.  
-    - `save_weights` Only save the best weights that model recorded.
   
-Class `LoadModel` Loads a saved model.  
+LoadModel Class: Loads a saved model.  
 
 `nnet.py` contains the class for the Neural Network (NN) and other class functions.
 
-Accuracy:  
-##### 97% on 1st epoch. 98% after 3 epochs.
+##### Accuracy:  
+###### ~98% on MNIST digits.
 
 ## Usage
 
-#### main.py
 ```python
 import numpy as np
 from nnet import NN, LoadModel, PreProcessing
-import matplotlib.pyplot as plt
 # === MNIST HANDWRITTEN DIGITS ===
 with np.load('datasets/mnist.npz') as data:
     X, Y = data['X'], data['Y']
@@ -60,7 +60,7 @@ model.hidden(neurons=512, activation='relu')
 model.hidden(neurons=512, activation='relu')
 model.output(output_size=10, activation='softmax')
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', learn_rate=0.1)
-model.train(X_train, Y_train, batch_size=32, epochs=15, valid_split=0.1, early_stopping=5, save_weights=True)
+model.train(X_train, Y_train, batch_size=32, epochs=50, valid_split=0.1, early_stopping=3, save_weights=True)
 model.evaluate(X_test, Y_test)
 model.plot()
 # === SAVE & LOAD ===
@@ -71,5 +71,6 @@ rnum = np.random.randint(0, X_test.shape[0])
 prediction, acc = model.predict(X_test[rnum])
 print(f'Model: {preprocess.decode(prediction)} ({acc:.2%}) | Actual: {preprocess.decode(Y_test[rnum])}')
 img_dims = int(np.sqrt(X_test.shape[1]))
+import matplotlib.pyplot as plt
 plt.imshow(X_test[rnum].reshape(img_dims, img_dims), cmap='bone_r')
 plt.show()
