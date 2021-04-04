@@ -1,4 +1,3 @@
-#!/Users/rlf/anaconda3/envs/python/bin/python
 import numpy as np
 from nnet import NN, LoadModel, PreProcessing
 import matplotlib.pyplot as plt
