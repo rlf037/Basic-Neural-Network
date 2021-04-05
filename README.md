@@ -1,12 +1,11 @@
 # Basic Neural Network
 
-### v1.11
+### v1.12
 
 A simple Neural Network written in Python usually only NumPy.
 
 #### TODO:
 
-- Add a stratify feature for split()
 - Convolution layers?
 - L1/L2 reguluarization
 
