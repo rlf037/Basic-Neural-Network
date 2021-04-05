@@ -1,9 +1,10 @@
 import numpy as np
 
 class NN:
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, process=None):
 
         self.verbose = verbose
+        self.process = process
         self.params = 0
         self.weights = []
         self.biases = []
@@ -18,7 +19,7 @@ class NN:
         self.losses = {'mae', 'mse', 'cce', 'scce', 'bce', 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'binary_crossentropy'}
         
         if self.verbose:
-            print('* Neural Network Initialised *')
+            print(f'* [{self.process.capitalize()}] Neural Network Initialised *')
 
     def input(self, input_size=None):
 
@@ -447,6 +448,20 @@ class PreProcessing:
             return self.code[data]
 
     @staticmethod
+    def distribution(data):
+
+        freq = {}
+        for x in data:
+            if x in freq.keys():
+                freq[x] += 1
+            else:
+                freq[x] = 1
+
+        for k, v in freq.items():
+            freq[k] = round((v/len(data))*100, 3)
+        return freq
+
+    @staticmethod
     def normalize(data):
 
         xmax, xmin = np.amax(data), np.amin(data)
@@ -455,15 +470,53 @@ class PreProcessing:
         return minmax(data)
 
     @staticmethod
-    def split(data, target, test_split=1/7, shuffle=True, seed=None):
+    def split(data, target, test_split=1/7, shuffle=True, seed=None, stratify=True):
+
+        if stratify and not shuffle:
+            raise ValueError("'shuffle' must be true if using 'stratify'.")
 
         samples = data.shape[0]
-
-        if shuffle:
-            perm = np.random.RandomState(seed=seed).permutation(samples)
-            data, target = data[perm], target[perm]
 
         test_size = int(samples * test_split)
         train_size = samples - test_size
 
-        return data[:train_size], data[-test_size:], target[:train_size], target[-test_size:]
+        if stratify:
+
+            import math
+            from itertools import cycle
+            spinner = cycle(['-', '\\', '|', '/'])
+            tol = 0.3
+
+            print("Stratifying the train/test split...")
+        
+            dist = PreProcessing.distribution(target)
+
+            while True:
+                
+                failed = False
+                
+                print('\b' + next(spinner), end='')
+
+                perm = np.random.RandomState(seed=seed).permutation(samples)
+                data, target = data[perm], target[perm]
+                target_train, target_test = target[:train_size], target[-test_size:]
+
+                dist2 = PreProcessing.distribution(target_train)
+                dist3 = PreProcessing.distribution(target_test)
+
+                for i in range(10):
+                    if math.isclose(dist[i], dist2[i], abs_tol=tol) and math.isclose(dist[i], dist3[i], abs_tol=tol):
+                        continue
+                    else:
+                        failed = True;
+
+                if not failed:
+                    print('\b', end='')
+                    return data[:train_size], data[-test_size:], target[:train_size], target[-test_size:]
+
+        else:
+            if shuffle:
+                perm = np.random.RandomState(seed=seed).permutation(samples)
+                data, target = data[perm], target[perm]
+            return data[:train_size], data[-test_size:], target[:train_size], target[-test_size:]
+
